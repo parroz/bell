@@ -86,6 +86,11 @@
             <input type="text" id="mqtt_subscribe_topic" name="mqtt_subscribe_topic" value="{{ settings.mqtt_subscribe_topic }}">
         </div>
         
+        <div class="form-group">
+            <label for="timeout_seconds">Access Response Timeout (seconds):</label>
+            <input type="number" id="timeout_seconds" name="timeout_seconds" value="{{ settings.timeout_seconds }}" min="1" max="60">
+        </div>
+        
         <button type="submit">Save Settings</button>
     </form>
 
@@ -224,7 +229,8 @@
                 mqtt_broker: document.getElementById('mqtt_broker').value,
                 mqtt_port: parseInt(document.getElementById('mqtt_port').value),
                 mqtt_publish_topic: document.getElementById('mqtt_publish_topic').value,
-                mqtt_subscribe_topic: document.getElementById('mqtt_subscribe_topic').value
+                mqtt_subscribe_topic: document.getElementById('mqtt_subscribe_topic').value,
+                timeout_seconds: parseInt(document.getElementById('timeout_seconds').value)
             };
 
             fetch('/save_settings', {

@@ -36,11 +36,22 @@ class BHOUTGate(QMainWindow):
         try:
             with open(config_path, 'r') as f:
                 self.config = json.load(f)
-        except:
+                # Ensure required settings exist
+                if 'mqtt_publish_topic' not in self.config:
+                    self.config['mqtt_publish_topic'] = 'bhoutgate/scan_code'
+                if 'mqtt_subscribe_topic' not in self.config:
+                    self.config['mqtt_subscribe_topic'] = 'bhoutgate/access_granted'
+                if 'timeout_seconds' not in self.config:
+                    self.config['timeout_seconds'] = 5
+                print(f"Loaded configuration: {self.config}")
+        except Exception as e:
+            print(f"Error loading config: {e}")
             self.config = {
                 'mqtt_broker': 'localhost',
                 'mqtt_port': 1883,
-                'mqtt_topic': 'bhoutgate/access',
+                'mqtt_publish_topic': 'bhoutgate/scan_code',
+                'mqtt_subscribe_topic': 'bhoutgate/access_granted',
+                'timeout_seconds': 5,
                 'video_path': os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'config', 'static', 'video.mp4')
             }
     
@@ -100,16 +111,18 @@ class BHOUTGate(QMainWindow):
             self.media_player.play()
     
     def on_connect(self, client, userdata, flags, rc):
-        print("Connected to MQTT broker")
-        client.subscribe(self.config['mqtt_topic'])
+        print(f"Connected to MQTT broker, subscribing to {self.config['mqtt_subscribe_topic']}")
+        client.subscribe(self.config['mqtt_subscribe_topic'])
     
     def on_message(self, client, userdata, msg):
-        if msg.topic == self.config['mqtt_topic']:
+        print(f"Received message on {msg.topic}: {msg.payload.decode()}")
+        if msg.topic == self.config['mqtt_subscribe_topic']:
             self.handle_access_response(msg.payload.decode())
     
     def simulate_scan(self):
         # Publish a simulated QR code
-        self.mqtt_client.publish(self.config['mqtt_topic'], "simulated_qr_code")
+        print(f"Publishing to {self.config['mqtt_publish_topic']}")
+        self.mqtt_client.publish(self.config['mqtt_publish_topic'], "simulated_qr_code")
         
         # Show waiting state
         self.status_label.setText("Waiting for access response...")
