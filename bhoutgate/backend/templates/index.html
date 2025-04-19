@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BHOUTGate Configuration</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+        .file-upload {
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+        .file-status {
+            margin-top: 5px;
+            font-size: 14px;
+            color: #666;
+        }
+        .file-status.success {
+            color: #4CAF50;
+        }
+        .file-status.error {
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <h1>BHOUTGate Configuration</h1>
+    
+    <form id="settingsForm">
+        <div class="form-group">
+            <label for="mqtt_broker">MQTT Broker:</label>
+            <input type="text" id="mqtt_broker" name="mqtt_broker" value="{{ settings.mqtt_broker }}">
+        </div>
+        
+        <div class="form-group">
+            <label for="mqtt_port">MQTT Port:</label>
+            <input type="number" id="mqtt_port" name="mqtt_port" value="{{ settings.mqtt_port }}">
+        </div>
+        
+        <div class="form-group">
+            <label for="mqtt_publish_topic">MQTT Publish Topic:</label>
+            <input type="text" id="mqtt_publish_topic" name="mqtt_publish_topic" value="{{ settings.mqtt_publish_topic }}">
+        </div>
+        
+        <div class="form-group">
+            <label for="mqtt_subscribe_topic">MQTT Access Granted Topic:</label>
+            <input type="text" id="mqtt_subscribe_topic" name="mqtt_subscribe_topic" value="{{ settings.mqtt_subscribe_topic }}">
+        </div>
+        
+        <button type="submit">Save Settings</button>
+    </form>
+
+    <h2>Change Password</h2>
+    <form id="passwordForm">
+        <div class="form-group">
+            <label for="admin_password">New Password:</label>
+            <input type="password" id="admin_password" name="admin_password" required>
+        </div>
+        <button type="submit">Change Password</button>
+    </form>
+
+    <h2>Upload Files</h2>
+    
+    <div class="file-upload">
+        <label for="logo">Static Logo (PNG):</label>
+        <input type="file" id="logo" name="file" accept=".png">
+        <button onclick="uploadFile('logo')">Upload</button>
+        <div id="logo-status" class="file-status"></div>
+    </div>
+    
+    <div class="file-upload">
+        <label for="video">Animated Logo (MP4):</label>
+        <input type="file" id="video" name="file" accept=".mp4">
+        <button onclick="uploadFile('video')">Upload</button>
+        <div id="video-status" class="file-status"></div>
+    </div>
+    
+    <div class="file-upload">
+        <label for="ca_cert">CA Certificate:</label>
+        <input type="file" id="ca_cert" name="file" accept=".crt">
+        <button onclick="uploadFile('ca_cert')">Upload</button>
+        <div id="ca_cert-status" class="file-status"></div>
+    </div>
+    
+    <div class="file-upload">
+        <label for="client_cert">Client Certificate:</label>
+        <input type="file" id="client_cert" name="file" accept=".crt">
+        <button onclick="uploadFile('client_cert')">Upload</button>
+        <div id="client_cert-status" class="file-status"></div>
+    </div>
+    
+    <div class="file-upload">
+        <label for="client_key">Client Key:</label>
+        <input type="file" id="client_key" name="file" accept=".key">
+        <button onclick="uploadFile('client_key')">Upload</button>
+        <div id="client_key-status" class="file-status"></div>
+    </div>
+
+    <div id="status" class="status" style="display: none;"></div>
+
+    <script>
+        // Function to check for existing files
+        async function checkExistingFiles() {
+            const fileTypes = ['logo', 'video', 'ca_cert', 'client_cert', 'client_key'];
+            for (const type of fileTypes) {
+                try {
+                    const extension = type === 'video' ? 'mp4' : type === 'logo' ? 'png' : type === 'client_key' ? 'key' : 'crt';
+                    const url = `/static/${type}.${extension}`;
+                    console.log(`Checking file: ${url}`);
+                    
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        cache: 'no-cache'
+                    });
+                    
+                    console.log(`Response for ${type}: ${response.status}`);
+                    
+                    if (response.ok) {
+                        document.getElementById(`${type}-status`).textContent = 'File exists';
+                        document.getElementById(`${type}-status`).className = 'file-status success';
+                    } else {
+                        document.getElementById(`${type}-status`).textContent = 'No file uploaded';
+                        document.getElementById(`${type}-status`).className = 'file-status';
+                    }
+                } catch (error) {
+                    console.error(`Error checking ${type}:`, error);
+                    document.getElementById(`${type}-status`).textContent = 'No file uploaded';
+                    document.getElementById(`${type}-status`).className = 'file-status';
+                }
+            }
+        }
+
+        // Check for existing files when page loads and every 5 seconds
+        document.addEventListener('DOMContentLoaded', () => {
+            checkExistingFiles();
+            setInterval(checkExistingFiles, 5000);
+        });
+
+        function showStatus(message, isError = false) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${isError ? 'error' : 'success'}`;
+            status.style.display = 'block';
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 3000);
+        }
+
+        async function uploadFile(inputId) {
+            const fileInput = document.getElementById(inputId);
+            const file = fileInput.files[0];
+            if (!file) {
+                showStatus('Please select a file first', true);
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('type', inputId);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    showStatus(result.message, false);
+                    document.getElementById(`${inputId}-status`).textContent = 'File uploaded successfully';
+                    document.getElementById(`${inputId}-status`).className = 'file-status success';
+                } else {
+                    showStatus(result.error, true);
+                    document.getElementById(`${inputId}-status`).textContent = 'Upload failed';
+                    document.getElementById(`${inputId}-status`).className = 'file-status error';
+                }
+            } catch (error) {
+                showStatus('Upload failed: ' + error.message, true);
+                document.getElementById(`${inputId}-status`).textContent = 'Upload failed';
+                document.getElementById(`${inputId}-status`).className = 'file-status error';
+            }
+        }
+
+        function saveSettings() {
+            const settings = {
+                mqtt_broker: document.getElementById('mqtt_broker').value,
+                mqtt_port: parseInt(document.getElementById('mqtt_port').value),
+                mqtt_publish_topic: document.getElementById('mqtt_publish_topic').value,
+                mqtt_subscribe_topic: document.getElementById('mqtt_subscribe_topic').value
+            };
+
+            fetch('/save_settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(settings)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showStatus('Failed to save settings: ' + data.error, true);
+                } else {
+                    showStatus('Settings saved successfully');
+                }
+            })
+            .catch(error => {
+                showStatus('Failed to save settings: ' + error.message, true);
+            });
+        }
+
+        document.getElementById('settingsForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            saveSettings();
+        });
+
+        document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const settings = {
+                admin_password: formData.get('admin_password')
+            };
+
+            try {
+                const response = await fetch('/save_settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(settings)
+                });
+                const result = await response.json();
+                showStatus(result.message, !response.ok);
+                if (response.ok) {
+                    document.getElementById('passwordForm').reset();
+                }
+            } catch (error) {
+                showStatus('Failed to change password: ' + error.message, true);
+            }
+        });
+    </script>
+</body>
+</html> 
