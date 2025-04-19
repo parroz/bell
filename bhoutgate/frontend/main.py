@@ -3,11 +3,35 @@ import json
 import os
 import time
 from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget
-from PySide6.QtCore import Qt, QTimer, QUrl
+from PySide6.QtCore import Qt, QTimer, QUrl, Signal, QObject
 from PySide6.QtMultimedia import QMediaPlayer
 from PySide6.QtMultimediaWidgets import QVideoWidget
 from PySide6.QtGui import QColor, QPalette
 import paho.mqtt.client as mqtt
+
+class MQTTClient(QObject):
+    message_received = Signal(str)  # Signal to emit when a message is received
+
+    def __init__(self, config):
+        super().__init__()
+        self.config = config
+        self.client = mqtt.Client()
+        self.client.on_connect = self.on_connect
+        self.client.on_message = self.on_message
+        self.client.connect(self.config['mqtt_broker'], self.config['mqtt_port'], 60)
+        self.client.loop_start()
+
+    def on_connect(self, client, userdata, flags, rc):
+        print(f"Connected to MQTT broker, subscribing to {self.config['mqtt_subscribe_topic']}")
+        client.subscribe(self.config['mqtt_subscribe_topic'])
+
+    def on_message(self, client, userdata, msg):
+        print(f"Received message on {msg.topic}: {msg.payload.decode()}")
+        if msg.topic == self.config['mqtt_subscribe_topic']:
+            self.message_received.emit(msg.payload.decode())
+
+    def publish(self, topic, message):
+        self.client.publish(topic, message)
 
 class BHOUTGate(QMainWindow):
     def __init__(self):
@@ -19,17 +43,17 @@ class BHOUTGate(QMainWindow):
         self.load_config()
         
         # Setup MQTT client
-        self.mqtt_client = mqtt.Client()
-        self.mqtt_client.on_connect = self.on_connect
-        self.mqtt_client.on_message = self.on_message
-        self.mqtt_client.connect(self.config['mqtt_broker'], self.config['mqtt_port'], 60)
-        self.mqtt_client.loop_start()
+        self.mqtt_client = MQTTClient(self.config)
+        self.mqtt_client.message_received.connect(self.handle_access_response)
         
         # Setup UI
         self.setup_ui()
         
         # Start video playback
         self.play_video()
+        
+        # Initialize timeout timer
+        self.timeout_timer = None
     
     def load_config(self):
         config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'settings.json')
@@ -110,16 +134,11 @@ class BHOUTGate(QMainWindow):
             self.media_player.setPosition(0)
             self.media_player.play()
     
-    def on_connect(self, client, userdata, flags, rc):
-        print(f"Connected to MQTT broker, subscribing to {self.config['mqtt_subscribe_topic']}")
-        client.subscribe(self.config['mqtt_subscribe_topic'])
-    
-    def on_message(self, client, userdata, msg):
-        print(f"Received message on {msg.topic}: {msg.payload.decode()}")
-        if msg.topic == self.config['mqtt_subscribe_topic']:
-            self.handle_access_response(msg.payload.decode())
-    
     def simulate_scan(self):
+        # Cancel any existing timeout timer
+        if self.timeout_timer and self.timeout_timer.isActive():
+            self.timeout_timer.stop()
+        
         # Publish a simulated QR code
         print(f"Publishing to {self.config['mqtt_publish_topic']}")
         self.mqtt_client.publish(self.config['mqtt_publish_topic'], "simulated_qr_code")
@@ -130,9 +149,16 @@ class BHOUTGate(QMainWindow):
         self.status_label.show()
         
         # Set timeout timer
-        QTimer.singleShot(self.config['timeout_seconds'] * 1000, self.handle_timeout)
+        self.timeout_timer = QTimer()
+        self.timeout_timer.setSingleShot(True)
+        self.timeout_timer.timeout.connect(self.handle_timeout)
+        self.timeout_timer.start(self.config['timeout_seconds'] * 1000)
     
     def handle_access_response(self, response):
+        # Cancel the timeout timer when receiving a response
+        if self.timeout_timer and self.timeout_timer.isActive():
+            self.timeout_timer.stop()
+        
         if response.lower() == "granted":
             self.show_access_granted()
         else:
@@ -144,14 +170,28 @@ class BHOUTGate(QMainWindow):
     def show_access_granted(self):
         self.status_label.setText("Access Granted")
         self.status_label.setStyleSheet("font-size: 24px; font-weight: bold; color: green;")
-        QTimer.singleShot(3000, self.reset_ui)
+        # Use the class timer for reset
+        self.timeout_timer = QTimer()
+        self.timeout_timer.setSingleShot(True)
+        self.timeout_timer.timeout.connect(self.reset_ui)
+        self.timeout_timer.start(3000)  # 3 seconds to show the granted message
     
     def show_access_denied(self, message):
         self.status_label.setText(f"Access Denied: {message}")
         self.status_label.setStyleSheet("font-size: 24px; font-weight: bold; color: red;")
-        QTimer.singleShot(3000, self.reset_ui)
+        # Use the class timer for reset
+        self.timeout_timer = QTimer()
+        self.timeout_timer.setSingleShot(True)
+        self.timeout_timer.timeout.connect(self.reset_ui)
+        self.timeout_timer.start(3000)  # 3 seconds to show the denied message
     
     def reset_ui(self):
+        # Stop any active timer
+        if self.timeout_timer and self.timeout_timer.isActive():
+            self.timeout_timer.stop()
+        self.timeout_timer = None
+        
+        # Reset UI
         self.status_label.hide()
         self.play_video()
 
