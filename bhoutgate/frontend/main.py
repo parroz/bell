@@ -4,9 +4,9 @@ import os
 import time
 from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget
 from PySide6.QtCore import Qt, QTimer, QUrl, Signal, QObject
-from PySide6.QtMultimedia import QMediaPlayer
+from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 from PySide6.QtMultimediaWidgets import QVideoWidget
-from PySide6.QtGui import QColor, QPalette
+from PySide6.QtGui import QPixmap, QColor, QPalette
 import paho.mqtt.client as mqtt
 
 class MQTTClient(QObject):
@@ -37,23 +37,32 @@ class BHOUTGate(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("BHOUTGate")
-        self.showFullScreen()
+        
+        # Initialize variables
+        self.timeout_timer = None
+        self.logo_label = None
+        self.video_widget = None
+        self.status_label = None
+        self.scan_button = None
         
         # Load configuration
         self.load_config()
+        
+        # Setup UI first
+        self.setup_ui()
         
         # Setup MQTT client
         self.mqtt_client = MQTTClient(self.config)
         self.mqtt_client.message_received.connect(self.handle_access_response)
         
-        # Setup UI
-        self.setup_ui()
+        # Initialize media players
+        self.setup_media()
         
-        # Start video playback
-        self.play_video()
+        # Show full screen after everything is set up
+        self.showFullScreen()
         
-        # Initialize timeout timer
-        self.timeout_timer = None
+        # Start in idle mode
+        self.show_idle()
     
     def load_config(self):
         config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'settings.json')
@@ -67,6 +76,8 @@ class BHOUTGate(QMainWindow):
                     self.config['mqtt_subscribe_topic'] = 'bhoutgate/access_granted'
                 if 'timeout_seconds' not in self.config:
                     self.config['timeout_seconds'] = 5
+                if 'bell_sound_path' not in self.config:
+                    self.config['bell_sound_path'] = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'config', 'static', 'bell.mp3')
                 print(f"Loaded configuration: {self.config}")
         except Exception as e:
             print(f"Error loading config: {e}")
@@ -76,6 +87,7 @@ class BHOUTGate(QMainWindow):
                 'mqtt_publish_topic': 'bhoutgate/scan_code',
                 'mqtt_subscribe_topic': 'bhoutgate/access_granted',
                 'timeout_seconds': 5,
+                'bell_sound_path': os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'config', 'static', 'bell.mp3'),
                 'video_path': os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'config', 'static', 'video.mp4')
             }
     
@@ -84,14 +96,13 @@ class BHOUTGate(QMainWindow):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
+        layout.setContentsMargins(0, 0, 0, 0)  # Remove margins
+        layout.setSpacing(0)  # Remove spacing
         
         # Create video widget
         self.video_widget = QVideoWidget()
+        self.video_widget.setStyleSheet("background-color: black;")  # Set black background
         layout.addWidget(self.video_widget)
-        
-        # Create media player
-        self.media_player = QMediaPlayer()
-        self.media_player.setVideoOutput(self.video_widget)
         
         # Create status label
         self.status_label = QLabel()
@@ -117,22 +128,102 @@ class BHOUTGate(QMainWindow):
         self.scan_button.clicked.connect(self.simulate_scan)
         layout.addWidget(self.scan_button)
         
-        # Hide status label initially
+        # Hide status and button initially
         self.status_label.hide()
+        self.scan_button.hide()
     
-    def play_video(self):
+    def setup_media(self):
+        # Setup video player
+        self.media_player = QMediaPlayer()
+        self.media_player.setVideoOutput(self.video_widget)
+        self.media_player.mediaStatusChanged.connect(self.handle_media_status)
+        self.media_player.positionChanged.connect(self.handle_position_changed)
+        self.media_player.durationChanged.connect(self.handle_duration_changed)
+        
+        # Setup audio player for bell sound
+        self.audio_output = QAudioOutput()
+        self.bell_player = QMediaPlayer()
+        self.bell_player.setAudioOutput(self.audio_output)
+        self.bell_player.mediaStatusChanged.connect(self.handle_bell_status)
+        
+        # Load and pause video initially
         video_path = self.config['video_path']
         if os.path.exists(video_path):
+            print(f"Loading video from: {video_path}")  # Debug print
             self.media_player.setSource(QUrl.fromLocalFile(video_path))
-            self.media_player.play()
-            self.media_player.mediaStatusChanged.connect(self.handle_media_status)
+            self.media_player.pause()
+            self.media_player.setPosition(0)  # Start at beginning
+            print("Video loaded and paused")  # Debug print
         else:
-            print(f"Video file not found at: {video_path}")
+            print(f"Video file not found at: {video_path}")  # Debug print
+    
+    def show_idle(self):
+        # Stop any active timers
+        if self.timeout_timer and self.timeout_timer.isActive():
+            self.timeout_timer.stop()
+        self.timeout_timer = None
+        
+        # Pause video at beginning
+        self.media_player.pause()
+        self.media_player.setPosition(0)
+        
+        # Hide status and button
+        self.status_label.hide()
+        self.scan_button.hide()
+        
+        print("Returned to idle mode")  # Debug print
+    
+    def resizeEvent(self, event):
+        # Only update logo if it exists and is visible
+        if self.logo_label and self.logo_label.isVisible():
+            logo_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'config', 'static', 'logo.png')
+            if os.path.exists(logo_path):
+                pixmap = QPixmap(logo_path)
+                scaled_pixmap = pixmap.scaled(self.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.logo_label.setPixmap(scaled_pixmap)
+        super().resizeEvent(event)
+    
+    def mousePressEvent(self, event):
+        # Handle touch/click anywhere on the screen
+        if self.video_widget.isVisible() and not self.status_label.isVisible():
+            self.play_animation()
+    
+    def play_animation(self):
+        print("Starting animation")  # Debug print
+        # Play bell sound
+        bell_path = self.config['bell_sound_path']
+        if os.path.exists(bell_path):
+            self.bell_player.setSource(QUrl.fromLocalFile(bell_path))
+            self.bell_player.play()
+            print("Playing bell sound")  # Debug print
+        
+        # Play video animation
+        print("Playing video")  # Debug print
+        self.media_player.setPosition(0)  # Reset to beginning
+        self.media_player.play()
+    
+    def handle_duration_changed(self, duration):
+        print(f"Video duration: {duration}ms")  # Debug print
+        self.video_duration = duration
+    
+    def handle_position_changed(self, position):
+        print(f"Video position: {position}ms")  # Debug print
+        # If we've played the full video, pause it
+        if hasattr(self, 'video_duration') and position >= self.video_duration - 100:  # 100ms buffer
+            print("Video completed one cycle, pausing")  # Debug print
+            self.media_player.pause()
+            self.media_player.setPosition(0)  # Reset to beginning
     
     def handle_media_status(self, status):
+        print(f"Media status changed: {status}")  # Debug print
         if status == QMediaPlayer.MediaStatus.EndOfMedia:
-            self.media_player.setPosition(0)
-            self.media_player.play()
+            print("Video ended")  # Debug print
+            self.media_player.pause()
+            self.media_player.setPosition(0)  # Reset to beginning
+    
+    def handle_bell_status(self, status):
+        if status == QMediaPlayer.MediaStatus.EndOfMedia:
+            self.bell_player.stop()
     
     def simulate_scan(self):
         # Cancel any existing timeout timer
@@ -173,7 +264,7 @@ class BHOUTGate(QMainWindow):
         # Use the class timer for reset
         self.timeout_timer = QTimer()
         self.timeout_timer.setSingleShot(True)
-        self.timeout_timer.timeout.connect(self.reset_ui)
+        self.timeout_timer.timeout.connect(self.show_idle)
         self.timeout_timer.start(3000)  # 3 seconds to show the granted message
     
     def show_access_denied(self, message):
@@ -182,18 +273,8 @@ class BHOUTGate(QMainWindow):
         # Use the class timer for reset
         self.timeout_timer = QTimer()
         self.timeout_timer.setSingleShot(True)
-        self.timeout_timer.timeout.connect(self.reset_ui)
+        self.timeout_timer.timeout.connect(self.show_idle)
         self.timeout_timer.start(3000)  # 3 seconds to show the denied message
-    
-    def reset_ui(self):
-        # Stop any active timer
-        if self.timeout_timer and self.timeout_timer.isActive():
-            self.timeout_timer.stop()
-        self.timeout_timer = None
-        
-        # Reset UI
-        self.status_label.hide()
-        self.play_video()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
