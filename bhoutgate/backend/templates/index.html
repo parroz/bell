@@ -87,6 +87,11 @@
         </div>
         
         <div class="form-group">
+            <label for="mqtt_bell_topic">MQTT Bell Ring Topic:</label>
+            <input type="text" id="mqtt_bell_topic" name="mqtt_bell_topic" value="{{ settings.mqtt_bell_topic }}">
+        </div>
+        
+        <div class="form-group">
             <label for="timeout_seconds">Access Response Timeout (seconds):</label>
             <input type="number" id="timeout_seconds" name="timeout_seconds" value="{{ settings.timeout_seconds }}" min="1" max="60">
         </div>
@@ -117,6 +122,13 @@
         <input type="file" id="video" name="file" accept=".mp4">
         <button onclick="uploadFile('video')">Upload</button>
         <div id="video-status" class="file-status"></div>
+    </div>
+    
+    <div class="file-upload">
+        <label for="bell">Bell Sound (MP3/WAV):</label>
+        <input type="file" id="bell" name="file" accept=".mp3,.wav">
+        <button onclick="uploadFile('bell')">Upload</button>
+        <div id="bell-status" class="file-status"></div>
     </div>
     
     <div class="file-upload">
@@ -200,7 +212,6 @@
 
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('type', inputId);
 
             try {
                 const response = await fetch('/upload', {
@@ -213,11 +224,12 @@
                     document.getElementById(`${inputId}-status`).textContent = 'File uploaded successfully';
                     document.getElementById(`${inputId}-status`).className = 'file-status success';
                 } else {
-                    showStatus(result.error, true);
+                    showStatus(result.error || 'Upload failed', true);
                     document.getElementById(`${inputId}-status`).textContent = 'Upload failed';
                     document.getElementById(`${inputId}-status`).className = 'file-status error';
                 }
             } catch (error) {
+                console.error('Upload error:', error);
                 showStatus('Upload failed: ' + error.message, true);
                 document.getElementById(`${inputId}-status`).textContent = 'Upload failed';
                 document.getElementById(`${inputId}-status`).className = 'file-status error';
@@ -230,6 +242,7 @@
                 mqtt_port: parseInt(document.getElementById('mqtt_port').value),
                 mqtt_publish_topic: document.getElementById('mqtt_publish_topic').value,
                 mqtt_subscribe_topic: document.getElementById('mqtt_subscribe_topic').value,
+                mqtt_bell_topic: document.getElementById('mqtt_bell_topic').value,
                 timeout_seconds: parseInt(document.getElementById('timeout_seconds').value)
             };
 
@@ -281,6 +294,34 @@
             } catch (error) {
                 showStatus('Failed to change password: ' + error.message, true);
             }
+        });
+
+        // Check for existing files
+        checkFile('logo', 'logo.png');
+        checkFile('video', 'video.mp4');
+        checkFile('bell', 'bell.mp3');
+        checkFile('ca_cert', 'ca_cert.crt');
+        checkFile('client_cert', 'client_cert.crt');
+        checkFile('client_key', 'client_key.key');
+        
+        // Handle file uploads
+        document.getElementById('logo').addEventListener('change', function() {
+            uploadFile(this, 'logo.png');
+        });
+        document.getElementById('video').addEventListener('change', function() {
+            uploadFile(this, 'video.mp4');
+        });
+        document.getElementById('bell').addEventListener('change', function() {
+            uploadFile(this, 'bell.mp3');
+        });
+        document.getElementById('ca_cert').addEventListener('change', function() {
+            uploadFile(this, 'ca_cert.crt');
+        });
+        document.getElementById('client_cert').addEventListener('change', function() {
+            uploadFile(this, 'client_cert.crt');
+        });
+        document.getElementById('client_key').addEventListener('change', function() {
+            uploadFile(this, 'client_key.key');
         });
     </script>
 </body>

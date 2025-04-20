@@ -74,6 +74,8 @@ class BHOUTGate(QMainWindow):
                     self.config['mqtt_publish_topic'] = 'bhoutgate/scan_code'
                 if 'mqtt_subscribe_topic' not in self.config:
                     self.config['mqtt_subscribe_topic'] = 'bhoutgate/access_granted'
+                if 'mqtt_bell_topic' not in self.config:
+                    self.config['mqtt_bell_topic'] = '/bell/ring'
                 if 'timeout_seconds' not in self.config:
                     self.config['timeout_seconds'] = 5
                 if 'bell_sound_path' not in self.config:
@@ -86,6 +88,7 @@ class BHOUTGate(QMainWindow):
                 'mqtt_port': 1883,
                 'mqtt_publish_topic': 'bhoutgate/scan_code',
                 'mqtt_subscribe_topic': 'bhoutgate/access_granted',
+                'mqtt_bell_topic': '/bell/ring',
                 'timeout_seconds': 5,
                 'bell_sound_path': os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'config', 'static', 'bell.mp3'),
                 'video_path': os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'config', 'static', 'video.mp4')
@@ -170,6 +173,11 @@ class BHOUTGate(QMainWindow):
     
     def play_animation(self):
         print("Starting animation")  # Debug print
+        
+        # Send MQTT message for bell ring
+        print(f"Publishing bell ring to {self.config['mqtt_bell_topic']}")  # Debug print
+        self.mqtt_client.publish(self.config['mqtt_bell_topic'], "ring")
+        
         # Play bell sound
         bell_path = self.config['bell_sound_path']
         if os.path.exists(bell_path):

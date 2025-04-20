@@ -3,7 +3,9 @@
     "mqtt_port": 1883,
     "mqtt_publish_topic": "bhoutgate/scan_code",
     "mqtt_subscribe_topic": "bhoutgate/access_granted",
+    "mqtt_bell_topic": "/bell/ring",
     "video_path": "/Users/arroz/BHOUTGate2/bhoutgate/config/static/video.mp4",
     "admin_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
-    "timeout_seconds": 12
+    "timeout_seconds": 12,
+    "bell_sound_path": "/Users/arroz/BHOUTGate2/bhoutgate/config/static/bell.mp3"
 }
