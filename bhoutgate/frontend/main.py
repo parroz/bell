@@ -110,27 +110,8 @@ class BHOUTGate(QMainWindow):
         self.status_label.setStyleSheet("font-size: 24px; font-weight: bold;")
         layout.addWidget(self.status_label)
         
-        # Create scan button
-        self.scan_button = QPushButton("Simulate QR Scan")
-        self.scan_button.setStyleSheet("""
-            QPushButton {
-                background-color: #4CAF50;
-                color: white;
-                border: none;
-                padding: 20px;
-                font-size: 24px;
-                border-radius: 10px;
-            }
-            QPushButton:hover {
-                background-color: #45a049;
-            }
-        """)
-        self.scan_button.clicked.connect(self.simulate_scan)
-        layout.addWidget(self.scan_button)
-        
-        # Hide status and button initially
+        # Hide status initially
         self.status_label.hide()
-        self.scan_button.hide()
     
     def setup_media(self):
         # Setup video player
@@ -167,9 +148,8 @@ class BHOUTGate(QMainWindow):
         self.media_player.pause()
         self.media_player.setPosition(0)
         
-        # Hide status and button
+        # Hide status
         self.status_label.hide()
-        self.scan_button.hide()
         
         print("Returned to idle mode")  # Debug print
     
@@ -225,56 +205,27 @@ class BHOUTGate(QMainWindow):
         if status == QMediaPlayer.MediaStatus.EndOfMedia:
             self.bell_player.stop()
     
-    def simulate_scan(self):
+    def handle_access_response(self, response):
         # Cancel any existing timeout timer
         if self.timeout_timer and self.timeout_timer.isActive():
             self.timeout_timer.stop()
         
-        # Publish a simulated QR code
-        print(f"Publishing to {self.config['mqtt_publish_topic']}")
-        self.mqtt_client.publish(self.config['mqtt_publish_topic'], "simulated_qr_code")
+        # Show appropriate message
+        if response.lower() == "granted":
+            self.status_label.setText("Access Granted")
+            self.status_label.setStyleSheet("font-size: 24px; font-weight: bold; color: green;")
+        else:
+            self.status_label.setText(f"Access Denied: {response}")
+            self.status_label.setStyleSheet("font-size: 24px; font-weight: bold; color: red;")
         
-        # Show waiting state
-        self.status_label.setText("Waiting for access response...")
-        self.status_label.setStyleSheet("font-size: 24px; font-weight: bold; color: black;")
+        # Show the message
         self.status_label.show()
         
-        # Set timeout timer
+        # Set timer to return to idle
         self.timeout_timer = QTimer()
         self.timeout_timer.setSingleShot(True)
-        self.timeout_timer.timeout.connect(self.handle_timeout)
+        self.timeout_timer.timeout.connect(self.show_idle)
         self.timeout_timer.start(self.config['timeout_seconds'] * 1000)
-    
-    def handle_access_response(self, response):
-        # Cancel the timeout timer when receiving a response
-        if self.timeout_timer and self.timeout_timer.isActive():
-            self.timeout_timer.stop()
-        
-        if response.lower() == "granted":
-            self.show_access_granted()
-        else:
-            self.show_access_denied(response)
-    
-    def handle_timeout(self):
-        self.show_access_denied("Timeout: No response received")
-    
-    def show_access_granted(self):
-        self.status_label.setText("Access Granted")
-        self.status_label.setStyleSheet("font-size: 24px; font-weight: bold; color: green;")
-        # Use the class timer for reset
-        self.timeout_timer = QTimer()
-        self.timeout_timer.setSingleShot(True)
-        self.timeout_timer.timeout.connect(self.show_idle)
-        self.timeout_timer.start(3000)  # 3 seconds to show the granted message
-    
-    def show_access_denied(self, message):
-        self.status_label.setText(f"Access Denied: {message}")
-        self.status_label.setStyleSheet("font-size: 24px; font-weight: bold; color: red;")
-        # Use the class timer for reset
-        self.timeout_timer = QTimer()
-        self.timeout_timer.setSingleShot(True)
-        self.timeout_timer.timeout.connect(self.show_idle)
-        self.timeout_timer.start(3000)  # 3 seconds to show the denied message
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
