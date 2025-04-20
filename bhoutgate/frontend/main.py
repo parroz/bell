@@ -218,21 +218,35 @@ class BHOUTGate(QMainWindow):
         if self.timeout_timer and self.timeout_timer.isActive():
             self.timeout_timer.stop()
         
-        # If access is granted, play animation
+        # Parse the response
         if response.lower() == "granted":
             self.play_animation()
+        else:
+            # Show the denial reason
+            self.show_denial_reason(response)
     
-    def handle_duration_changed(self, duration):
-        print(f"Video duration: {duration}ms")  # Debug print
-        self.video_duration = duration
-    
-    def handle_position_changed(self, position):
-        print(f"Video position: {position}ms")  # Debug print
-        # If we've played the full video, pause it
-        if hasattr(self, 'video_duration') and position >= self.video_duration - 100:  # 100ms buffer
-            print("Video completed one cycle, pausing")  # Debug print
-            self.media_player.pause()
-            self.media_player.setPosition(0)  # Reset to beginning
+    def show_denial_reason(self, reason):
+        print(f"Access denied: {reason}")  # Debug print
+        
+        # Set the status label text and style
+        self.status_label.setText(f"Access Denied\n{reason}")
+        self.status_label.setStyleSheet("""
+            font-size: 24px;
+            font-weight: bold;
+            color: red;
+            background-color: black;
+            padding: 20px;
+            border-radius: 10px;
+        """)
+        
+        # Show the status label
+        self.status_label.show()
+        
+        # Set a timer to return to idle mode after 3 seconds
+        self.timeout_timer = QTimer()
+        self.timeout_timer.setSingleShot(True)
+        self.timeout_timer.timeout.connect(self.show_idle)
+        self.timeout_timer.start(3000)  # 3 seconds
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
