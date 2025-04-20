@@ -85,35 +85,44 @@ def upload_file():
         return jsonify({'error': 'No selected file'}), 400
     
     if file:
-        # Get the file type from the input ID
-        file_type = request.form.get('type', '')
-        if not file_type:
-            return jsonify({'error': 'No file type specified'}), 400
-            
-        # Map file types to extensions
-        extensions = {
-            'logo': '.png',
-            'video': '.mp4',
-            'ca_cert': '.crt',
-            'client_cert': '.crt',
-            'client_key': '.key'
+        # Get the file extension
+        file_ext = os.path.splitext(file.filename)[1].lower()
+        
+        # Define allowed file types and their corresponding filenames
+        allowed_files = {
+            '.png': 'logo.png',
+            '.mp4': 'video.mp4',
+            '.mp3': 'bell.mp3',  # Add support for bell sound
+            '.wav': 'bell.mp3',  # Also allow WAV files
+            '.crt': 'ca_cert.crt',
+            '.key': 'client_key.key'
         }
         
-        if file_type not in extensions:
+        if file_ext not in allowed_files:
             return jsonify({'error': 'Invalid file type'}), 400
-            
-        # Save with consistent filename
-        filename = f"{file_type}{extensions[file_type]}"
-        file_path = os.path.join(app.static_folder, filename)
-        print(f"Saving file to: {file_path}")
-        file.save(file_path)
         
-        # Update video_path in settings if it's a video
-        if file_type == 'video':
+        # Save the file with the predefined name
+        filename = allowed_files[file_ext]
+        file_path = os.path.join(app.static_folder, filename)
+        print(f"Saving file to: {file_path}")  # Debug print
+        try:
+            file.save(file_path)
+            print(f"File saved successfully")  # Debug print
+        except Exception as e:
+            print(f"Error saving file: {str(e)}")  # Debug print
+            return jsonify({'error': f'Failed to save file: {str(e)}'}), 500
+        
+        # Update settings if it's a video file
+        if file_ext == '.mp4':
             settings = load_settings()
             settings['video_path'] = file_path
             save_settings(settings)
-            
+        # Update settings if it's a bell sound file
+        elif file_ext in ['.mp3', '.wav']:
+            settings = load_settings()
+            settings['bell_sound_path'] = file_path
+            save_settings(settings)
+        
         return jsonify({'message': 'File uploaded successfully', 'filename': filename})
 
 @app.route('/save_settings', methods=['POST'])
