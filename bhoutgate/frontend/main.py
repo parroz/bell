@@ -11,27 +11,117 @@ import paho.mqtt.client as mqtt
 
 class MQTTClient(QObject):
     message_received = Signal(str)  # Signal to emit when a message is received
+    connected = Signal()  # Signal to emit when connected
 
     def __init__(self, config):
         super().__init__()
         self.config = config
+        self.client = None
+        self.is_connected = False
+        self.reconnect_timer = None
+        self.setup_client()
+
+    def setup_client(self):
+        """Setup MQTT client with proper configuration"""
+        if self.client is not None:
+            try:
+                self.client.disconnect()
+                self.client.loop_stop()
+            except:
+                pass
+            self.client = None
+
         self.client = mqtt.Client()
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
-        self.client.connect(self.config['mqtt_broker'], self.config['mqtt_port'], 60)
-        self.client.loop_start()
+        self.client.on_disconnect = self.on_disconnect
+        self.client.on_publish = self.on_publish  # Add publish callback
+        
+        # Configure TLS if enabled
+        if self.config.get('mqtt_use_tls', False):
+            try:
+                print("Configuring TLS for MQTT connection...")
+                print(f"CA cert: {self.config.get('mqtt_ca_cert')}")
+                print(f"Client cert: {self.config.get('mqtt_client_cert')}")
+                print(f"Client key: {self.config.get('mqtt_client_key')}")
+                
+                self.client.tls_set(
+                    ca_certs=self.config.get('mqtt_ca_cert'),
+                    certfile=self.config.get('mqtt_client_cert'),
+                    keyfile=self.config.get('mqtt_client_key'),
+                    tls_version=mqtt.ssl.PROTOCOL_TLSv1_2
+                )
+                print("TLS configured successfully")
+            except Exception as e:
+                print(f"Error configuring TLS: {e}")
+                raise
+        
+        # Connect to broker - FORCE port 8883 for TLS
+        try:
+            print(f"Connecting to MQTT broker at {self.config['mqtt_broker']}:8883")
+            self.client.connect(self.config['mqtt_broker'], 8883, 60)
+            self.client.loop_start()
+        except Exception as e:
+            print(f"Error connecting to MQTT broker: {e}")
+            self.schedule_reconnect()
 
     def on_connect(self, client, userdata, flags, rc):
-        print(f"Connected to MQTT broker, subscribing to {self.config['mqtt_subscribe_topic']}")
-        client.subscribe(self.config['mqtt_subscribe_topic'])
+        """Callback for when the client receives a CONNACK response from the server"""
+        if rc == 0:
+            print("Connected to MQTT broker successfully")
+            self.is_connected = True
+            # Subscribe to the access granted topic
+            subscribe_topic = self.config['mqtt_subscribe_topic']
+            print(f"Subscribing to topic: {subscribe_topic}")
+            client.subscribe(subscribe_topic)
+            self.connected.emit()
+        else:
+            print(f"Failed to connect to MQTT broker, return code: {rc}")
+            self.is_connected = False
+            self.schedule_reconnect()
+
+    def on_publish(self, client, userdata, mid):
+        """Callback for when a message is published"""
+        print(f"Message published successfully (mid: {mid})")
+
+    def on_disconnect(self, client, userdata, rc):
+        """Callback for when the client disconnects from the broker"""
+        print("Disconnected from MQTT broker")
+        self.is_connected = False
+        if rc != 0:  # Only reconnect if the disconnect was unexpected
+            self.schedule_reconnect()
+
+    def schedule_reconnect(self):
+        """Schedule a reconnection attempt using QTimer"""
+        if self.reconnect_timer is not None:
+            self.reconnect_timer.stop()
+        
+        self.reconnect_timer = QTimer()
+        self.reconnect_timer.setSingleShot(True)
+        self.reconnect_timer.timeout.connect(self.setup_client)
+        self.reconnect_timer.start(5000)  # 5 seconds delay
 
     def on_message(self, client, userdata, msg):
+        """Callback for when a message is received"""
         print(f"Received message on {msg.topic}: {msg.payload.decode()}")
         if msg.topic == self.config['mqtt_subscribe_topic']:
             self.message_received.emit(msg.payload.decode())
 
     def publish(self, topic, message):
-        self.client.publish(topic, message)
+        """Publish a message to the MQTT broker"""
+        if not self.is_connected:
+            print("Not connected to MQTT broker, cannot publish")
+            return
+        try:
+            print(f"Publishing to {topic}: {message}")
+            result = self.client.publish(topic, message, qos=1)  # Use QoS 1 for guaranteed delivery
+            print(f"Publish result: {result}")
+            if result.rc != mqtt.MQTT_ERR_SUCCESS:
+                print(f"Error publishing message: {result.rc}")
+                self.schedule_reconnect()
+        except Exception as e:
+            print(f"Error publishing message: {e}")
+            self.schedule_reconnect()
 
 class BHOUTGate(QMainWindow):
     def __init__(self):
@@ -54,6 +144,7 @@ class BHOUTGate(QMainWindow):
         # Setup MQTT client
         self.mqtt_client = MQTTClient(self.config)
         self.mqtt_client.message_received.connect(self.handle_access_response)
+        self.mqtt_client.connected.connect(self.on_mqtt_connected)
         
         # Initialize media players
         self.setup_media()
@@ -75,23 +166,49 @@ class BHOUTGate(QMainWindow):
                 if 'mqtt_subscribe_topic' not in self.config:
                     self.config['mqtt_subscribe_topic'] = 'bhoutgate/access_granted'
                 if 'mqtt_bell_topic' not in self.config:
-                    self.config['mqtt_bell_topic'] = '/bell/ring'
+                    self.config['mqtt_bell_topic'] = 'bhoutgate/bell/ring'
                 if 'timeout_seconds' not in self.config:
                     self.config['timeout_seconds'] = 5
                 if 'bell_sound_path' not in self.config:
                     self.config['bell_sound_path'] = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'config', 'static', 'bell.mp3')
+                if 'mqtt_use_tls' not in self.config:
+                    self.config['mqtt_use_tls'] = True  # Enable TLS by default
+                if 'mqtt_port' not in self.config:
+                    self.config['mqtt_port'] = 8883  # Use TLS port by default
+                if 'mqtt_broker' not in self.config:
+                    self.config['mqtt_broker'] = 'localhost'
+                
+                # Get the absolute path to the workspace root
+                workspace_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+                
+                # Set certificate paths with correct directory structure
+                self.config['mqtt_ca_cert'] = os.path.join(workspace_root, 'bhoutgate', 'config', 'certs', 'ca.crt')
+                self.config['mqtt_client_cert'] = os.path.join(workspace_root, 'bhoutgate', 'config', 'certs', 'client.crt')
+                self.config['mqtt_client_key'] = os.path.join(workspace_root, 'bhoutgate', 'config', 'certs', 'client.key')
+                
                 print(f"Loaded configuration: {self.config}")
+                print(f"CA cert path: {self.config['mqtt_ca_cert']}")
+                print(f"Client cert path: {self.config['mqtt_client_cert']}")
+                print(f"Client key path: {self.config['mqtt_client_key']}")
+                print(f"MQTT broker: {self.config['mqtt_broker']}:{self.config['mqtt_port']}")
         except Exception as e:
             print(f"Error loading config: {e}")
+            # Get the absolute path to the workspace root
+            workspace_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+            
             self.config = {
                 'mqtt_broker': 'localhost',
-                'mqtt_port': 1883,
+                'mqtt_port': 8883,  # Use TLS port by default
                 'mqtt_publish_topic': 'bhoutgate/scan_code',
                 'mqtt_subscribe_topic': 'bhoutgate/access_granted',
-                'mqtt_bell_topic': '/bell/ring',
+                'mqtt_bell_topic': 'bhoutgate/bell/ring',
                 'timeout_seconds': 5,
-                'bell_sound_path': os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'config', 'static', 'bell.mp3'),
-                'video_path': os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'config', 'static', 'video.mp4')
+                'bell_sound_path': os.path.join(workspace_root, 'bhoutgate', 'config', 'static', 'bell.mp3'),
+                'video_path': os.path.join(workspace_root, 'bhoutgate', 'config', 'static', 'video.mp4'),
+                'mqtt_use_tls': True,  # Enable TLS by default
+                'mqtt_ca_cert': os.path.join(workspace_root, 'bhoutgate', 'config', 'certs', 'ca.crt'),
+                'mqtt_client_cert': os.path.join(workspace_root, 'bhoutgate', 'config', 'certs', 'client.crt'),
+                'mqtt_client_key': os.path.join(workspace_root, 'bhoutgate', 'config', 'certs', 'client.key')
             }
     
     def setup_ui(self):
@@ -175,8 +292,11 @@ class BHOUTGate(QMainWindow):
         print("Starting animation")  # Debug print
         
         # Send MQTT message for bell ring
-        print(f"Publishing bell ring to {self.config['mqtt_bell_topic']}")  # Debug print
-        self.mqtt_client.publish(self.config['mqtt_bell_topic'], "ring")
+        bell_topic = self.config['mqtt_bell_topic']
+        if not bell_topic.startswith('bhoutgate/'):
+            bell_topic = f"bhoutgate/{bell_topic.lstrip('/')}"
+        print(f"Publishing bell ring to {bell_topic}")  # Debug print
+        self.mqtt_client.publish(bell_topic, "ring")
         
         # Play bell sound
         bell_path = self.config['bell_sound_path']
@@ -247,6 +367,10 @@ class BHOUTGate(QMainWindow):
         self.timeout_timer.setSingleShot(True)
         self.timeout_timer.timeout.connect(self.show_idle)
         self.timeout_timer.start(3000)  # 3 seconds
+
+    def on_mqtt_connected(self):
+        """Callback for when MQTT client connects successfully"""
+        print("MQTT client connected and ready")
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
