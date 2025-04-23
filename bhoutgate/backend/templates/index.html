@@ -156,34 +156,68 @@
 
     <script>
         // Function to check for existing files
-        async function checkExistingFiles() {
-            const fileTypes = ['logo', 'video', 'ca_cert', 'client_cert', 'client_key'];
-            for (const type of fileTypes) {
-                try {
-                    const extension = type === 'video' ? 'mp4' : type === 'logo' ? 'png' : type === 'client_key' ? 'key' : 'crt';
-                    const url = `/static/${type}.${extension}`;
-                    console.log(`Checking file: ${url}`);
+        function checkExistingFiles() {
+            fetch('/check-files')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Received files:', data);  // Debug log
                     
-                    const response = await fetch(url, {
-                        method: 'GET',
-                        cache: 'no-cache'
-                    });
-                    
-                    console.log(`Response for ${type}: ${response.status}`);
-                    
-                    if (response.ok) {
-                        document.getElementById(`${type}-status`).textContent = 'File exists';
-                        document.getElementById(`${type}-status`).className = 'file-status success';
+                    // Update logo status
+                    if (data.logo) {
+                        document.getElementById('logo-status').textContent = 'Logo uploaded';
+                        document.getElementById('logo-status').className = 'file-status success';
                     } else {
-                        document.getElementById(`${type}-status`).textContent = 'No file uploaded';
-                        document.getElementById(`${type}-status`).className = 'file-status';
+                        document.getElementById('logo-status').textContent = 'No logo uploaded';
+                        document.getElementById('logo-status').className = 'file-status';
                     }
-                } catch (error) {
-                    console.error(`Error checking ${type}:`, error);
-                    document.getElementById(`${type}-status`).textContent = 'No file uploaded';
-                    document.getElementById(`${type}-status`).className = 'file-status';
-                }
-            }
+                    
+                    // Update video status
+                    if (data.video) {
+                        document.getElementById('video-status').textContent = 'Video uploaded';
+                        document.getElementById('video-status').className = 'file-status success';
+                    } else {
+                        document.getElementById('video-status').textContent = 'No video uploaded';
+                        document.getElementById('video-status').className = 'file-status';
+                    }
+                    
+                    // Update bell status
+                    if (data.bell) {
+                        document.getElementById('bell-status').textContent = 'Bell sound uploaded';
+                        document.getElementById('bell-status').className = 'file-status success';
+                    } else {
+                        document.getElementById('bell-status').textContent = 'No bell sound uploaded';
+                        document.getElementById('bell-status').className = 'file-status';
+                    }
+                    
+                    // Update certificate status
+                    if (data.ca_cert) {
+                        document.getElementById('ca_cert-status').textContent = 'CA certificate uploaded';
+                        document.getElementById('ca_cert-status').className = 'file-status success';
+                    } else {
+                        document.getElementById('ca_cert-status').textContent = 'No CA certificate uploaded';
+                        document.getElementById('ca_cert-status').className = 'file-status';
+                    }
+                    
+                    if (data.client_cert) {
+                        document.getElementById('client_cert-status').textContent = 'Client certificate uploaded';
+                        document.getElementById('client_cert-status').className = 'file-status success';
+                    } else {
+                        document.getElementById('client_cert-status').textContent = 'No client certificate uploaded';
+                        document.getElementById('client_cert-status').className = 'file-status';
+                    }
+                    
+                    // Update key status
+                    if (data.client_key) {
+                        document.getElementById('client_key-status').textContent = 'Client key uploaded';
+                        document.getElementById('client_key-status').className = 'file-status success';
+                    } else {
+                        document.getElementById('client_key-status').textContent = 'No client key uploaded';
+                        document.getElementById('client_key-status').className = 'file-status';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking files:', error);
+                });
         }
 
         // Check for existing files when page loads and every 5 seconds
