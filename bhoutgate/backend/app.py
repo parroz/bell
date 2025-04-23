@@ -5,12 +5,16 @@ from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 
+# Get the absolute path to the project root
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
 app = Flask(__name__, 
-    static_folder=os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'config', 'static')),
+    static_folder=os.path.join(PROJECT_ROOT, 'config', 'static'),
     static_url_path='/static'
 )
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 app.secret_key = 'your-secret-key-here'  # Change this to a secure secret key
+app.config['UPLOAD_FOLDER'] = os.path.join(PROJECT_ROOT, 'config', 'static')
 
 # Ensure config directory exists
 os.makedirs(app.static_folder, exist_ok=True)
@@ -18,7 +22,7 @@ os.makedirs(app.static_folder, exist_ok=True)
 # Load settings from file
 def load_settings():
     try:
-        with open(os.path.join(os.path.dirname(__file__), '..', 'config', 'settings.json'), 'r') as f:
+        with open(os.path.join(PROJECT_ROOT, 'config', 'settings.json'), 'r') as f:
             settings = json.load(f)
             # Ensure all required settings exist
             if 'video_path' not in settings:
@@ -40,7 +44,7 @@ def load_settings():
 
 # Save settings to file
 def save_settings(settings):
-    with open(os.path.join(os.path.dirname(__file__), '..', 'config', 'settings.json'), 'w') as f:
+    with open(os.path.join(PROJECT_ROOT, 'config', 'settings.json'), 'w') as f:
         json.dump(settings, f, indent=4)
 
 # Login required decorator
@@ -94,7 +98,7 @@ def upload_file():
             '.mp4': 'video.mp4',
             '.mp3': 'bell.mp3',  # Add support for bell sound
             '.wav': 'bell.mp3',  # Also allow WAV files
-            '.crt': 'ca_cert.crt',
+            '.crt': 'client_cert.crt',
             '.key': 'client_key.key'
         }
         
@@ -155,6 +159,50 @@ def serve_static(filename):
     except Exception as e:
         print(f"Error serving {filename}: {str(e)}")
         return jsonify({'error': str(e)}), 404
+
+@app.route('/check-files')
+def check_files():
+    print(f"Static folder path: {app.static_folder}")
+    files = {}
+    
+    logo_path = os.path.join(app.static_folder, 'logo.png')
+    print(f"Checking logo at: {logo_path}")
+    if os.path.exists(logo_path):
+        print("Logo exists")
+        files['logo'] = url_for('static', filename='logo.png')
+    
+    video_path = os.path.join(app.static_folder, 'video.mp4')
+    print(f"Checking video at: {video_path}")
+    if os.path.exists(video_path):
+        print("Video exists")
+        files['video'] = url_for('static', filename='video.mp4')
+    
+    bell_path = os.path.join(app.static_folder, 'bell.mp3')
+    print(f"Checking bell at: {bell_path}")
+    if os.path.exists(bell_path):
+        print("Bell exists")
+        files['bell'] = url_for('static', filename='bell.mp3')
+    
+    ca_cert_path = os.path.join(app.static_folder, 'ca_cert.crt')
+    print(f"Checking CA cert at: {ca_cert_path}")
+    if os.path.exists(ca_cert_path):
+        print("CA cert exists")
+        files['ca_cert'] = True
+    
+    cert_path = os.path.join(app.static_folder, 'client_cert.crt')
+    print(f"Checking cert at: {cert_path}")
+    if os.path.exists(cert_path):
+        print("Cert exists")
+        files['client_cert'] = True
+    
+    key_path = os.path.join(app.static_folder, 'client_key.key')
+    print(f"Checking key at: {key_path}")
+    if os.path.exists(key_path):
+        print("Key exists")
+        files['client_key'] = True
+    
+    print(f"Returning files: {files}")
+    return jsonify(files)
 
 if __name__ == '__main__':
     print(f"Static files will be served from: {app.static_folder}")
