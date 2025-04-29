@@ -1,0 +1,24 @@
+{
+    "mqtt": {
+        "broker": "192.168.1.90",
+        "port": 8883,
+        "use_tls": true,
+        "ca_cert": "/home/badmin/bell/bhoutgate/config/certs/ca.crt",
+        "client_cert": "/home/badmin/bell/bhoutgate/config/certs/client.crt",
+        "client_key": "/home/badmin/bell/bhoutgate/config/certs/client.key",
+        "topics": {
+            "publish": "bhoutgate/scan_code",
+            "subscribe": "bhoutgate/access_granted",
+            "bell": "bhoutgate/bell/ring"
+        }
+    },
+    "media": {
+        "video_path": "/home/badmin/bell/bhoutgate/config/static/video.mp4",
+        "bell_sound_path": "/home/badmin/bell/bhoutgate/config/static/bell.mp3",
+        "logo_path": "/home/badmin/bell/bhoutgate/config/static/logo.png"
+    },
+    "ui": {
+        "timeout_seconds": 5,
+        "denial_display_time": 3
+    }
+} 
