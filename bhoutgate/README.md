@@ -1,83 +1,93 @@
-# BHOUTGate - Gym Access Control System
+# BHOUTGate Frontend
 
-BHOUTGate is a local gym access control system that runs fully offline. It consists of two main components:
+A Qt-based frontend application for the BHOUTGate access control system.
 
-1. A PyQt5 frontend application that runs on a touchscreen display
-2. A Flask backend configuration panel
+## Features
 
-## Prerequisites
+1. A full-screen Qt interface for displaying access control status
+2. QR code scanning support
+3. Video playback for access states
+4. MQTT integration for communication
+5. TLS encryption for security
 
-- Python 3.7 or higher
-- MQTT broker (e.g., Mosquitto) running on localhost:1883
-- Required Python packages (install using `pip install -r requirements.txt`)
+## Requirements
+
+- Python 3.8+
+- PySide6
+- paho-mqtt
+- python-dotenv
 
 ## Installation
 
-1. Clone this repository
-2. Install the required Python packages:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Install and start an MQTT broker (e.g., Mosquitto)
-4. Place your logo files in the `config/static/` directory:
-   - `logo.png` - Static logo image
-   - `logo.mp4` - Animated logo video
-
-## Running the System
-
-### 1. Start the Configuration Panel (Backend)
-
+1. Create a virtual environment:
 ```bash
-cd backend
-python app.py
+python3 -m venv .venv
+source .venv/bin/activate
 ```
 
-The configuration panel will be available at `http://localhost:8080`
+2. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
 
-### 2. Start the Frontend Application
+## Running the Application
 
+1. Start the frontend application:
 ```bash
 cd frontend
 python main.py
 ```
 
-The frontend will run in fullscreen mode, showing the animated logo video when idle.
+The application will:
+- Show a full-screen window
+- Connect to the MQTT broker
+- Display the configured video
+- Handle QR code input
+- Show access granted/denied states
 
 ## Configuration
 
-Use the web interface at `http://localhost:8080` to configure:
+The application is configured through `frontend/config.json`:
 
-- MQTT topics for publishing and subscribing
-- Timeout duration for access responses
-- Upload logo files and certificates
+```json
+{
+    "mqtt": {
+        "broker": "localhost",
+        "port": 8883,
+        "use_tls": true,
+        "ca_cert": "/path/to/ca.crt",
+        "client_cert": "/path/to/client.crt",
+        "client_key": "/path/to/client.key",
+        "topics": {
+            "publish": "bhoutgate/scan_code",
+            "subscribe": "bhoutgate/access_granted",
+            "bell": "bhoutgate/bell/ring"
+        }
+    },
+    "media": {
+        "video_path": "/path/to/video.mp4",
+        "bell_sound_path": "/path/to/bell.mp3",
+        "logo_path": "/path/to/logo.png"
+    },
+    "ui": {
+        "timeout_seconds": 5,
+        "denial_display_time": 3
+    }
+}
+```
 
-## Testing
-
-1. Start both the backend and frontend applications
-2. In the frontend, click the "Simulate QR Scan" button
-3. The system will publish a simulated QR code to the configured MQTT topic
-4. To test access granted, publish "granted" to the configured response topic
-5. To test access denied, publish any other message to the response topic
-
-## File Structure
+## Project Structure
 
 ```
 bhoutgate/
-│
-├── frontend/         # PyQt5 GUI app
-│   └── main.py
-│
-├── backend/          # Flask config panel
-│   └── app.py
-│
-├── config/           # Uploaded assets and settings
-│   ├── settings.json
-│   └── static/
-│       ├── logo.png
-│       ├── logo.mp4
-│       ├── ca.crt
-│       ├── client.crt
-│       └── client.key
+├── frontend/          # Qt frontend application
+│   ├── main.py       # Main application code
+│   ├── config.json   # Configuration file
+│   └── static/       # Media files
+├── config/           # Configuration files
+│   ├── mosquitto/    # MQTT broker config
+│   └── certs/        # TLS certificates
+└── README.md         # This file
 ```
 
 ## Security Notes
