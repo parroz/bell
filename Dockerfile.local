@@ -1,0 +1,28 @@
+FROM python:3.9-slim
+
+# Install mosquitto clients
+RUN apt-get update && apt-get install -y \
+    mosquitto-clients \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy certificates
+COPY bhoutgate/config/certs /app/certs
+
+# Create a test script
+RUN echo '#!/bin/bash\n\
+mosquitto_pub -h host.docker.internal -p 8883 \
+  --cafile /app/certs/ca.crt \
+  --cert /app/certs/client.crt \
+  --key /app/certs/client.key \
+  -t "test/topic" \
+  -m "Hello from container!" \
+  --debug \
+  --insecure' > /app/test_mqtt.sh
+
+RUN chmod +x /app/test_mqtt.sh
+
+# Run the test script
+CMD ["/app/test_mqtt.sh"] 
