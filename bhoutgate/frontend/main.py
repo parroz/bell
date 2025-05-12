@@ -319,10 +319,6 @@ class BHOUTGate(QMainWindow):
             import json
             response_data = json.loads(response)
             
-            # Send door event message
-            door_event = {"open": response_data.get("open", False)}
-            self.mqtt_client.publish(self.config['mqtt']['topics']['door_event'], json.dumps(door_event))
-            
             if response_data.get("open", False):
                 self.play_animation()
             else:
