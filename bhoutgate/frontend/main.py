@@ -320,6 +320,19 @@ class BHOUTGate(QMainWindow):
             response_data = json.loads(response)
             
             if response_data.get("open", False):
+                # Send command to Shelly door control
+                shelly_command = {
+                    "id": 1,
+                    "src": "bhout-mqtt-cli",
+                    "method": "Switch.Set",
+                    "params": {
+                        "id": 0,
+                        "on": True
+                    }
+                }
+                self.mqtt_client.publish("doorshelly/rpc", json.dumps(shelly_command))
+                print("Sent door open command to Shelly")
+                
                 self.play_animation()
             else:
                 # Get the reason if provided
