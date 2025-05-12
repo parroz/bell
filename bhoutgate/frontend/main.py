@@ -314,21 +314,41 @@ class BHOUTGate(QMainWindow):
         if self.timeout_timer and self.timeout_timer.isActive():
             self.timeout_timer.stop()
         
-        # Send door event message
-        door_event = {"open": response.lower() == "granted"}
-        import json
-        self.mqtt_client.publish(self.config['mqtt']['topics']['door_event'], json.dumps(door_event))
-        
-        if response.lower() == "granted":
-            self.play_animation()
-        else:
-            print(f"Access denied: {response}")
-            self.show_denial_reason(response)
+        try:
+            # Parse the response JSON
+            import json
+            response_data = json.loads(response)
+            
+            # Send door event message
+            door_event = {"open": response_data.get("open", False)}
+            self.mqtt_client.publish(self.config['mqtt']['topics']['door_event'], json.dumps(door_event))
+            
+            if response_data.get("open", False):
+                self.play_animation()
+            else:
+                # Get the reason if provided
+                reason = response_data.get("reason", "")
+                if reason:
+                    print(f"Access denied: {reason}")
+                    self.show_denial_reason(reason)
+                else:
+                    print("Access denied")
+                    self.show_denial_reason("")
+        except json.JSONDecodeError as e:
+            print(f"Error parsing response: {e}")
+            self.show_denial_reason("Invalid response format")
+        except Exception as e:
+            print(f"Error handling response: {e}")
+            self.show_denial_reason("Error processing response")
     
     def show_denial_reason(self, reason):
         print(f"Access denied: {reason}")
         
-        self.status_label.setText(f"Access Denied\n{reason}")
+        if reason:
+            self.status_label.setText(f"Access Denied: {reason}")
+        else:
+            self.status_label.setText("Access Denied")
+            
         self.status_label.setStyleSheet("""
             font-size: 24px;
             font-weight: bold;
