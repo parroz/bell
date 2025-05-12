@@ -168,7 +168,7 @@ class BHOUTGate(QMainWindow):
         self.show_idle()
     
     def load_config(self):
-        config_path = 'config.json'
+        config_path = '../config/config.json'
         try:
             with open(config_path, 'r') as f:
                 self.config = json.load(f)
