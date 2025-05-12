@@ -1,6 +1,7 @@
 import sys
 import json
 import os
+import ssl
 from PySide6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget, QLineEdit
 from PySide6.QtCore import Qt, QTimer, QUrl, Signal, QObject
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
@@ -29,6 +30,8 @@ class MQTTClient(QObject):
                 pass
             self.client = None
 
+        print("\n=== MQTT Client Setup ===")
+        print(f"Creating new MQTT client instance")
         self.client = mqtt.Client()
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
@@ -36,25 +39,42 @@ class MQTTClient(QObject):
         self.client.on_publish = self.on_publish
         
         try:
-            print("Configuring TLS for MQTT connection...")
-            print(f"CA cert: {self.config['mqtt']['ca_cert']}")
-            print(f"Client cert: {self.config['mqtt']['client_cert']}")
-            print(f"Client key: {self.config['mqtt']['client_key']}")
+            print("\n=== TLS Configuration ===")
+            print(f"CA cert path: {self.config['mqtt']['ca_cert']}")
+            print(f"Client cert path: {self.config['mqtt']['client_cert']}")
+            print(f"Client key path: {self.config['mqtt']['client_key']}")
+            
+            # Check if certificate files exist
+            for cert_file in [self.config['mqtt']['ca_cert'], self.config['mqtt']['client_cert'], self.config['mqtt']['client_key']]:
+                if not os.path.exists(cert_file):
+                    print(f"WARNING: Certificate file does not exist: {cert_file}")
+                else:
+                    print(f"Certificate file exists: {cert_file}")
             
             self.client.tls_set(
                 ca_certs=self.config['mqtt']['ca_cert'],
                 certfile=self.config['mqtt']['client_cert'],
-                keyfile=self.config['mqtt']['client_key']
+                keyfile=self.config['mqtt']['client_key'],
+                cert_reqs=ssl.CERT_REQUIRED,
+                tls_version=ssl.PROTOCOL_TLS,
+                ciphers=None
             )
-            print("TLS configured successfully")
+            self.client.tls_insecure_set(False)
+            # Set the hostname for TLS verification
+            self.client._hostname = self.config['mqtt']['broker']
+            print("TLS configuration successful")
         except Exception as e:
             print(f"Error configuring TLS: {e}")
             raise
         
         try:
-            print(f"Connecting to MQTT broker at {self.config['mqtt']['broker']}:{self.config['mqtt']['port']}")
-            self.client.connect(self.config['mqtt']['broker'], self.config['mqtt']['port'], 60)
+            print("\n=== MQTT Connection ===")
+            broker = self.config['mqtt']['broker']
+            port = self.config['mqtt']['port']
+            print(f"Attempting to connect to MQTT broker at {broker}:{port}")
+            self.client.connect(broker, port, 60)
             self.client.loop_start()
+            print("MQTT client loop started")
         except Exception as e:
             print(f"Error connecting to MQTT broker: {e}")
             self.schedule_reconnect()
@@ -148,11 +168,24 @@ class BHOUTGate(QMainWindow):
         self.show_idle()
     
     def load_config(self):
-        config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.json')
+        config_path = 'config.json'
         try:
             with open(config_path, 'r') as f:
                 self.config = json.load(f)
-                print(f"Loaded configuration: {self.config}")
+                
+            # Override MQTT broker settings with environment variables
+            broker = os.getenv('MQTT_BROKER')
+            port = os.getenv('MQTT_PORT')
+            
+            if broker:
+                print(f"Overriding MQTT broker with environment variable: {broker}")
+                self.config['mqtt']['broker'] = broker
+            
+            if port:
+                print(f"Overriding MQTT port with environment variable: {port}")
+                self.config['mqtt']['port'] = int(port)
+            
+            print(f"Final MQTT configuration: broker={self.config['mqtt']['broker']}, port={self.config['mqtt']['port']}")
         except Exception as e:
             print(f"Error loading config: {e}")
             raise
