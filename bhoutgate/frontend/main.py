@@ -314,6 +314,11 @@ class BHOUTGate(QMainWindow):
         if self.timeout_timer and self.timeout_timer.isActive():
             self.timeout_timer.stop()
         
+        # Send door event message
+        door_event = {"open": response.lower() == "granted"}
+        import json
+        self.mqtt_client.publish(self.config['mqtt']['topics']['door_event'], json.dumps(door_event))
+        
         if response.lower() == "granted":
             self.play_animation()
         else:

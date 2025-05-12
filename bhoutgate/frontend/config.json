@@ -9,7 +9,8 @@
         "topics": {
             "publish": "bhout/doorbell/event/tns:axis/CameraApplicationPlatform/BarcodeReader/BarcodeFound",
             "subscribe": "bhoutgate/access_granted",
-            "bell": "bhoutgate/bell/ring"
+            "bell": "bhoutgate/bell/ring",
+            "door_event": "bhout/doorbell/event/open-door"
         }
     },
     "media": {
