@@ -7,7 +7,7 @@
         "client_cert": "../config/static/client.crt",
         "client_key": "../config/static/client.key",
         "topics": {
-            "publish": "bhoutgate/scan_code",
+            "publish": "bhout/doorbell/event/tns:axis/CameraApplicationPlatform/BarcodeReader/BarcodeFound",
             "subscribe": "bhoutgate/access_granted",
             "bell": "bhoutgate/bell/ring"
         }
