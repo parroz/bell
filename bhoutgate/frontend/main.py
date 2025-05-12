@@ -271,10 +271,10 @@ class BHOUTGate(QMainWindow):
     def play_animation(self):
         print("Starting animation")
         
-        # Send MQTT message for bell ring
-        bell_topic = self.config['mqtt']['topics']['bell']
-        print(f"Publishing bell ring to {bell_topic}")
-        self.mqtt_client.publish(bell_topic, "ring")
+        # Send button press message
+        button_press = {"ringing": True}
+        import json
+        self.mqtt_client.publish(self.config['mqtt']['topics']['button_press'], json.dumps(button_press))
         
         # Play bell sound
         bell_path = self.config['media']['bell_sound_path']

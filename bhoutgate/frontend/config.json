@@ -10,7 +10,8 @@
             "publish": "bhout/doorbell/event/tns:axis/CameraApplicationPlatform/BarcodeReader/BarcodeFound",
             "subscribe": "bhoutgate/access_granted",
             "bell": "bhoutgate/bell/ring",
-            "door_event": "bhout/doorbell/event/open-door"
+            "door_event": "bhout/doorbell/event/open-door",
+            "button_press": "bhout/doorbell/event/button-press"
         }
     },
     "media": {
