@@ -346,7 +346,25 @@ class BHOUTGate(QMainWindow):
     def handle_qr_input(self):
         qr_data = self.qr_input.text()
         print(f"QR Code scanned: {qr_data}")
-        self.mqtt_client.publish(self.config['mqtt']['topics']['publish'], qr_data)
+        
+        # Format the message as JSON
+        from datetime import datetime
+        message = {
+            "message": {
+                "data": {
+                    "type": "QRCode",
+                    "data": qr_data,
+                    "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+                }
+            }
+        }
+        
+        # Convert to JSON string
+        import json
+        json_message = json.dumps(message)
+        print(f"Publishing message: {json_message}")
+        
+        self.mqtt_client.publish(self.config['mqtt']['topics']['publish'], json_message)
         self.qr_input.clear()
     
     def keyPressEvent(self, event):
