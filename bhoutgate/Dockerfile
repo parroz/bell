@@ -1,7 +1,10 @@
 FROM balenalib/raspberrypi5-debian-python:3.10-bullseye
 
 # Enable udev for device access
-ENV UDEV=1
+ENV UDEV=on
+
+# Force privileged mode recognition
+ENV PRIVILEGED=true
 
 # Install system dependencies for EGLFS and Qt
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -54,5 +57,8 @@ COPY . .
 # Debug: List contents of config/static again
 RUN ls -la config/static/
 
-# Set the entrypoint to run test script
+# Set the entrypoint to run Balena's entry script
+ENTRYPOINT ["/usr/bin/entry.sh"]
+
+# Set the command to run the test script
 CMD ["python3", "test.py"] 

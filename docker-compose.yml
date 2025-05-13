@@ -4,4 +4,9 @@ services:
   bhoutgate:
     build:
       context: .
-      dockerfile: Dockerfile 
+      dockerfile: Dockerfile
+    privileged: true  # Required for camera access
+    environment:
+      - DISPLAY=:0
+      - UDEV=on
+    restart: always
