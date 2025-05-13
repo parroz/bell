@@ -1,75 +1,45 @@
 # Use Raspberry Pi 5 64-bit OS with Python (Debian Bullseye)
 FROM balenalib/raspberrypi5-debian-python:3.10-bullseye
 
-# Install system dependencies for GUI and Qt
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends --fix-missing \
-    xserver-xorg-core \
-    xinit \
-    matchbox-window-manager \
+# Enable udev for device access
+ENV UDEV=1
+
+# Install system dependencies for EGLFS and Qt
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libxkbcommon0 \
+    libinput10 \
+    libevdev2 \
+    libegl1-mesa \
     libgl1-mesa-dri \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
-    libxcb-xinerama0 \
-    libxcb-icccm4 \
-    libxcb-image0 \
-    libxcb-keysyms1 \
-    libxcb-randr0 \
-    libxcb-render-util0 \
-    libxcb-xfixes0 \
-    libxcb-shape0 \
-    libxcb-xkb1 \
-    libxcb-xinerama0 \
-    libxcb-icccm4 \
-    libxcb-image0 \
-    libxcb-keysyms1 \
-    libxcb-randr0 \
-    libxcb-render-util0 \
-    libxcb-xfixes0 \
-    libxcb-shape0 \
-    libxcb-xkb1 \
+    libgbm1 \
+    libdrm2 \
+    qt6-base-dev \
+    qt6-base-dev-tools \
+    libqt6gui6 \
+    libqt6widgets6 \
+    libqt6core6 \
+    libqt6dbus6 \
+    libqt6network6 \
+    libqt6opengl6 \
+    libqt6openglwidgets6 \
     && rm -rf /var/lib/apt/lists/*
 
-# Set environment variables
-ENV UDEV=1
-ENV DISPLAY=:0
-ENV QT_QPA_PLATFORM=xcb
+# Set Qt environment variables for EGLFS
+ENV QT_QPA_PLATFORM=eglfs
 ENV QT_DEBUG_PLUGINS=1
+ENV LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu:$LD_LIBRARY_PATH
 
 # Set working directory
 WORKDIR /usr/src/app
 
-# Copy requirements first to leverage Docker cache
-COPY bhoutgate/requirements.txt .
-
-# Install Python dependencies
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
 RUN pip3 install --no-cache-dir --upgrade pip && \
     pip3 install --no-cache-dir wheel setuptools && \
     pip3 install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application
-COPY bhoutgate/ .
+# Copy application code
+COPY . .
 
-# Create startup script
-RUN echo '#!/bin/bash\n\
-# Kill any existing X server\n\
-pkill Xorg || true\n\
-\n\
-# Start X server\n\
-Xorg :0 -nolisten tcp &\n\
-sleep 3\n\
-\n\
-# Set display\n\
-export DISPLAY=:0\n\
-\n\
-# Start window manager\n\
-matchbox-window-manager &\n\
-sleep 2\n\
-\n\
-# Start the application\n\
-python3 main.py\n\
-' > /usr/src/app/start.sh && \
-chmod +x /usr/src/app/start.sh
-
-# Start the application
-CMD ["/usr/src/app/start.sh"] 
+# Set the entrypoint to run test script
+CMD ["python3", "test.py"] 
