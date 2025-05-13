@@ -1,4 +1,4 @@
-FROM balenalib/raspberrypi5-64-python:3.10-bullseye-run
+FROM balenalib/raspberrypi5-64-debian:bullseye
 
 # Enable udev for device access
 ENV UDEV=1
@@ -15,6 +15,8 @@ RUN apt-get update && apt-get install -y \
     libgl1-mesa-dri \
     libgbm1 \
     libinput10 \
+    python3-pip \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Set display for X11
