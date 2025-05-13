@@ -68,6 +68,7 @@ RUN apt-get update && apt-get install -y \
 ENV QT_QPA_PLATFORM=xcb
 ENV QT_DEBUG_PLUGINS=1
 ENV DISPLAY=:0
+ENV LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu:$LD_LIBRARY_PATH
 
 # Set working directory
 WORKDIR /usr/src/app
@@ -83,9 +84,14 @@ COPY . .
 
 # Create startup script
 RUN echo '#!/bin/bash\n\
+# Set display\n\
 export DISPLAY=:0\n\
+\n\
+# Start window manager\n\
 matchbox-window-manager &\n\
 sleep 2\n\
+\n\
+# Start the application\n\
 python3 main.py\n\
 ' > /usr/src/app/start.sh && \
     chmod +x /usr/src/app/start.sh
