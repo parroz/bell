@@ -40,11 +40,11 @@ RUN pip3 install --no-cache-dir --upgrade pip && \
 # Create necessary directories
 RUN mkdir -p config/static
 
-# Copy certificates first to ensure they exist
-COPY config/static/ca.crt config/static/client.crt config/static/client.key config/static/
-
-# Copy application code
+# Copy application code first
 COPY . .
+
+# Copy certificates from the correct location
+COPY bhoutgate/config/static/ca.crt bhoutgate/config/static/client.crt bhoutgate/config/static/client.key config/static/
 
 # Set the entrypoint to run test script
 CMD ["python3", "test.py"] 
