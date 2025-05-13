@@ -23,7 +23,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libqt6openglwidgets6 \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get update && apt-get install -y --no-install-recommends libxkbcommon0 \
-    && ls -l /usr/lib/aarch64-linux-gnu/libxkbcommon.so.0* || echo "libxkbcommon0 not found"
+    && ls -l /usr/lib/aarch64-linux-gnu/libxkbcommon.so.0* || echo "libxkbcommon0 not found" \
+    && echo "Contents of /usr/lib/aarch64-linux-gnu/:" \
+    && ls -la /usr/lib/aarch64-linux-gnu/
 
 # Set Qt environment variables
 ENV QT_QPA_PLATFORM=eglfs
