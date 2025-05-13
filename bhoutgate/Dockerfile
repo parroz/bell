@@ -59,5 +59,5 @@ echo "\n=== Qt Plugin Paths ==="\n\
 python3 -c "from PySide6.QtCore import QCoreApplication; print(QCoreApplication.libraryPaths())"\n\
 ' > /usr/src/app/debug.sh && chmod +x /usr/src/app/debug.sh
 
-# Set the entrypoint to run debug script first
-CMD ["/bin/bash", "-c", "/usr/src/app/debug.sh && python3 main.py"] 
+# Set the entrypoint to run test script
+CMD ["python3", "test.py"] 
