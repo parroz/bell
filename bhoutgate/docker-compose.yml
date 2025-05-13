@@ -1,11 +1,15 @@
-version: '3.5'
+version: '2.1'
 services:
-  main:
+  bhoutgate:
     build: .
-    privileged: true  # Required for camera access
+    privileged: true
+    devices:
+      - /dev/tty0:/dev/tty0
+      - /dev/input:/dev/input
     environment:
       - DISPLAY=:0
+      - QT_QPA_PLATFORM=xcb
+      - QT_DEBUG_PLUGINS=1
     volumes:
-      - /dev/video0:/dev/video0  # Mount the camera device
-      - /dev/video1:/dev/video1  # Sometimes needed for camera
+      - /tmp/.X11-unix:/tmp/.X11-unix
     restart: always 
