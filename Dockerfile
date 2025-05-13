@@ -1,5 +1,5 @@
 # Use Balena's recommended base image for Raspberry Pi 5 (64-bit)
-FROM balenalib/raspberrypi3-debian-python:3.11-bullseye
+FROM balenalib/raspberrypi5-64-debian-python:3.11-bullseye
 
 # Install system dependencies in smaller chunks with retries
 RUN apt-get update && \
