@@ -31,26 +31,42 @@ class MQTTClient:
         
         try:
             print("\n=== TLS Configuration ===")
-            print(f"CA cert path: {self.config['mqtt']['ca_cert']}")
-            print(f"Client cert path: {self.config['mqtt']['client_cert']}")
-            print(f"Client key path: {self.config['mqtt']['client_key']}")
+            ca_cert = self.config['mqtt']['ca_cert']
+            client_cert = self.config['mqtt']['client_cert']
+            client_key = self.config['mqtt']['client_key']
             
             # Check if certificate files exist
-            for cert_file in [self.config['mqtt']['ca_cert'], self.config['mqtt']['client_cert'], self.config['mqtt']['client_key']]:
+            certs_exist = True
+            for cert_file in [ca_cert, client_cert, client_key]:
                 if not os.path.exists(cert_file):
                     print(f"WARNING: Certificate file does not exist: {cert_file}")
+                    certs_exist = False
                 else:
                     print(f"Certificate file exists: {cert_file}")
             
-            self.client.tls_set(
-                ca_certs=self.config['mqtt']['ca_cert'],
-                certfile=self.config['mqtt']['client_cert'],
-                keyfile=self.config['mqtt']['client_key'],
-                cert_reqs=ssl.CERT_REQUIRED,
-                tls_version=ssl.PROTOCOL_TLS,
-                ciphers=None
-            )
-            self.client.tls_insecure_set(False)
+            if certs_exist:
+                print("Using full TLS configuration with client certificates")
+                self.client.tls_set(
+                    ca_certs=ca_cert,
+                    certfile=client_cert,
+                    keyfile=client_key,
+                    cert_reqs=ssl.CERT_REQUIRED,
+                    tls_version=ssl.PROTOCOL_TLS,
+                    ciphers=None
+                )
+                self.client.tls_insecure_set(False)
+            else:
+                print("Using basic TLS configuration without client certificates")
+                self.client.tls_set(
+                    ca_certs=None,
+                    certfile=None,
+                    keyfile=None,
+                    cert_reqs=ssl.CERT_NONE,
+                    tls_version=ssl.PROTOCOL_TLS,
+                    ciphers=None
+                )
+                self.client.tls_insecure_set(True)
+            
             self.client._hostname = self.config['mqtt']['broker']
             print("TLS configuration successful")
         except Exception as e:
