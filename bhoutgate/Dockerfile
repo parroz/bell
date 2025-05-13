@@ -37,6 +37,12 @@ RUN pip3 install --no-cache-dir --upgrade pip && \
     pip3 install --no-cache-dir wheel setuptools && \
     pip3 install --no-cache-dir -r requirements.txt
 
+# Create necessary directories
+RUN mkdir -p config/static
+
+# Copy certificates first to ensure they exist
+COPY config/static/ca.crt config/static/client.crt config/static/client.key config/static/
+
 # Copy application code
 COPY . .
 
