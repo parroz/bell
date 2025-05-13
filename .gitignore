@@ -44,6 +44,6 @@ Thumbs.db
 # Project specific
 bhoutgate/config/static/*
 !bhoutgate/config/static/.gitkeep
-
-# Logs
-*.log 
+!bhoutgate/config/static/bell.wav
+!bhoutgate/config/static/doorbell.mp3
+!bhoutgate/config/static/video.mp4 

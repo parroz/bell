@@ -2,8 +2,6 @@ version: '2.2'
 
 services:
   bhoutgate:
-    build: .
-    privileged: true  # Required for camera access
-    environment:
-      - DISPLAY=:0
-    restart: always 
+    build:
+      context: .
+      dockerfile: Dockerfile 

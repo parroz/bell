@@ -100,18 +100,53 @@ class DoorbellApp:
             if msg.topic == MQTT_TOPIC:
                 self.handle_doorbell_event(payload)
         except Exception as e:
-            self.log(f"Error processing message: {str(e)}")
+            print(f"Error publishing message: {e}")
+            self.schedule_reconnect()
+
+class BHOUTGate(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("BHOUTGate")
+        
+        # Initialize variables
+        self.timeout_timer = None
+        self.logo_label = None
+        self.video_widget = None
+        self.status_label = None
+        
+        # Load configuration
+        self.config = self.load_config()
+        
+        # Setup UI first
+        self.setup_ui()
+        
+        # Setup MQTT client
+        self.mqtt_client = MQTTClient(self.config)
+        self.mqtt_client.message_received.connect(self.handle_access_response)
+        self.mqtt_client.connected.connect(self.on_mqtt_connected)
+        
+        # Initialize media players
+        self.setup_media()
+        
+        # Setup QR scanner input
+        self.qr_input = QLineEdit()
+        self.qr_input.setReadOnly(True)
+        self.qr_input.setVisible(False)
+        self.qr_input.returnPressed.connect(self.handle_qr_input)
+        
+        # Show full screen after everything is set up
+        self.showFullScreen()
+        
+        # Start in idle mode
+        self.show_idle()
     
-    def handle_doorbell_event(self, payload):
+    def load_config(self):
         try:
-            data = json.loads(payload)
-            if data.get('event') == 'doorbell':
-                self.log("Doorbell event received")
-                # Here you can add additional logic to handle the doorbell event
-        except json.JSONDecodeError:
-            self.log("Invalid JSON payload received")
+            with open('config/config.json', 'r') as f:
+                return json.load(f)
         except Exception as e:
-            self.log(f"Error handling doorbell event: {str(e)}")
+            print(f"Error loading config: {e}")
+            return {}
     
     def open_door(self):
         try:
