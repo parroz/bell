@@ -5,11 +5,11 @@ ENV UDEV=1
 
 # Install system dependencies for GUI and Qt
 RUN apt-get update && apt-get install -y \
-    xserver-xorg-core \
-    xinit \
-    matchbox-window-manager \
-    x11-xserver-utils \
     xvfb \
+    x11vnc \
+    xauth \
+    x11-xserver-utils \
+    matchbox-window-manager \
     libxcb-xinerama0 \
     libglu1-mesa \
     libegl1-mesa \
@@ -26,6 +26,8 @@ RUN apt-get update && apt-get install -y \
     libxcb-xfixes0 \
     libxcb-shape0 \
     libxcb-xkb1 \
+    qt6-base-dev \
+    qt6-base-dev-tools \
     && rm -rf /var/lib/apt/lists/*
 
 # Set display for X11
@@ -45,35 +47,12 @@ RUN pip3 install --no-cache-dir --upgrade pip && \
 # Copy application code
 COPY . .
 
-# Create X server configuration
-RUN echo 'Section "Device"\n\
-    Identifier "Dummy Device"\n\
-    Driver "dummy"\n\
-EndSection\n\
-\n\
-Section "Monitor"\n\
-    Identifier "Dummy Monitor"\n\
-    HorizSync 28.0-80.0\n\
-    VertRefresh 48.0-75.0\n\
-EndSection\n\
-\n\
-Section "Screen"\n\
-    Identifier "Dummy Screen"\n\
-    Device "Dummy Device"\n\
-    Monitor "Dummy Monitor"\n\
-    DefaultDepth 24\n\
-    SubSection "Display"\n\
-        Depth 24\n\
-        Modes "1024x768"\n\
-    EndSubSection\n\
-EndSection' > /usr/share/X11/xorg.conf.d/99-dummy.conf
-
 # Create startup script
 RUN echo '#!/bin/bash\n\
 # Kill any existing X server\n\
-pkill Xorg || true\n\
+pkill Xvfb || true\n\
 \n\
-# Start X server with dummy driver\n\
+# Start Xvfb\n\
 Xvfb :0 -screen 0 1024x768x24 &\n\
 sleep 3\n\
 \n\

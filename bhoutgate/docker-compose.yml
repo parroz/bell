@@ -3,9 +3,7 @@ services:
   bhoutgate:
     build: .
     privileged: true
-    devices:
-      - /dev/tty0:/dev/tty0
-      - /dev/input:/dev/input
+    network_mode: host
     environment:
       - DISPLAY=:0
       - QT_QPA_PLATFORM=xcb
