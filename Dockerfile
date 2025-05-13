@@ -1,5 +1,5 @@
 # Use Balena's recommended base image for Raspberry Pi 5 (64-bit)
-FROM balenalib/raspberrypi5-64:bullseye
+FROM balenalib/raspberry-pi5-64:bullseye
 
 # Install Python and system dependencies
 RUN install_packages python3 python3-pip python3-dev
