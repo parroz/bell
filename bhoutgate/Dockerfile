@@ -28,12 +28,18 @@ RUN apt-get update && apt-get install -y \
     libxcb-xkb1 \
     qt6-base-dev \
     qt6-base-dev-tools \
+    libqt6gui6 \
+    libqt6widgets6 \
+    libqt6core6 \
+    libqt6dbus6 \
+    libqt6xcbqpa6 \
     && rm -rf /var/lib/apt/lists/*
 
 # Set display for X11
 ENV DISPLAY=:0
 ENV QT_QPA_PLATFORM=xcb
 ENV QT_DEBUG_PLUGINS=1
+ENV QT_X11_NO_MITSHM=1
 
 # Set working directory
 WORKDIR /usr/src/app
@@ -52,8 +58,8 @@ RUN echo '#!/bin/bash\n\
 # Kill any existing X server\n\
 pkill Xvfb || true\n\
 \n\
-# Start Xvfb\n\
-Xvfb :0 -screen 0 1024x768x24 &\n\
+# Start Xvfb with specific options\n\
+Xvfb :0 -screen 0 1024x768x24 -ac +extension GLX +render -noreset &\n\
 sleep 3\n\
 \n\
 # Set display\n\
