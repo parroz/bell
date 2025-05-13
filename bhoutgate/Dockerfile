@@ -18,7 +18,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libqt6widgets6 \
     libqt6core6 \
     libqt6dbus6 \
-    libqt6xcbqpa6 \
     libqt6network6 \
     libqt6opengl6 \
     libqt6openglwidgets6 \
