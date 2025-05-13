@@ -1,0 +1,11 @@
+version: '3.5'
+services:
+  main:
+    build: .
+    privileged: true  # Required for camera access
+    environment:
+      - DISPLAY=:0
+    volumes:
+      - /dev/video0:/dev/video0  # Mount the camera device
+      - /dev/video1:/dev/video1  # Sometimes needed for camera
+    restart: always 

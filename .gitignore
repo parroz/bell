@@ -1,3 +1,9 @@
+# Certificates
+certs/
+*.crt
+*.key
+*.pem
+
 # Python
 __pycache__/
 *.py[cod]
@@ -37,4 +43,7 @@ Thumbs.db
 
 # Project specific
 bhoutgate/config/static/*
-!bhoutgate/config/static/.gitkeep 
+!bhoutgate/config/static/.gitkeep
+
+# Logs
+*.log 
