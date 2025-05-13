@@ -13,15 +13,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1-mesa-dri \
     libgbm1 \
     libdrm2 \
-    qt6-base-dev \
-    qt6-base-dev-tools \
-    libqt6gui6 \
-    libqt6widgets6 \
-    libqt6core6 \
-    libqt6dbus6 \
-    libqt6network6 \
-    libqt6opengl6 \
-    libqt6openglwidgets6 \
+    qtbase5-dev \
+    qtbase5-dev-tools \
+    libqt5gui5 \
+    libqt5widgets5 \
+    libqt5core5a \
+    libqt5dbus5 \
+    libqt5network5 \
+    libqt5opengl5 \
+    libqt5opengl5-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Set Qt environment variables for EGLFS
