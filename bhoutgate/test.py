@@ -4,6 +4,7 @@ import os
 import ssl
 import paho.mqtt.client as mqtt
 import time
+import subprocess
 
 class MQTTClient:
     def __init__(self, config):
@@ -35,14 +36,27 @@ class MQTTClient:
             client_cert = self.config['mqtt']['client_cert']
             client_key = self.config['mqtt']['client_key']
             
+            # Print current working directory and list its contents
+            print(f"\nCurrent working directory: {os.getcwd()}")
+            print("\nContents of current directory:")
+            subprocess.run(['ls', '-la'], check=True)
+            
+            # Print config/static directory contents
+            print("\nContents of config/static directory:")
+            subprocess.run(['ls', '-la', 'config/static'], check=True)
+            
             # Check if certificate files exist
             certs_exist = True
             for cert_file in [ca_cert, client_cert, client_key]:
+                abs_path = os.path.abspath(cert_file)
+                print(f"\nChecking certificate file: {cert_file}")
+                print(f"Absolute path: {abs_path}")
                 if not os.path.exists(cert_file):
                     print(f"WARNING: Certificate file does not exist: {cert_file}")
                     certs_exist = False
                 else:
                     print(f"Certificate file exists: {cert_file}")
+                    print(f"File permissions: {oct(os.stat(cert_file).st_mode)[-3:]}")
             
             if certs_exist:
                 print("Using full TLS configuration with client certificates")
@@ -56,7 +70,8 @@ class MQTTClient:
                 )
                 self.client.tls_insecure_set(False)
             else:
-                print("Using basic TLS configuration without client certificates")
+                print("WARNING: Certificate files not found. The broker may require client certificates.")
+                print("Attempting to connect with basic TLS configuration...")
                 self.client.tls_set(
                     ca_certs=None,
                     certfile=None,
@@ -78,11 +93,45 @@ class MQTTClient:
             broker = self.config['mqtt']['broker']
             port = self.config['mqtt']['port']
             print(f"Attempting to connect to MQTT broker at {broker}:{port}")
-            self.client.connect(broker, port, 60)
-            self.client.loop_start()
-            print("MQTT client loop started")
+            
+            # Add connection retry logic
+            max_retries = 3
+            retry_count = 0
+            while retry_count < max_retries:
+                try:
+                    self.client.connect(broker, port, 60)
+                    self.client.loop_start()
+                    print("MQTT client loop started")
+                    break
+                except ssl.SSLError as e:
+                    if "certificate required" in str(e).lower():
+                        print("ERROR: Broker requires client certificates. Please ensure all certificate files are present.")
+                        print("Required files:")
+                        print(f"- CA Certificate: {ca_cert}")
+                        print(f"- Client Certificate: {client_cert}")
+                        print(f"- Client Key: {client_key}")
+                        break
+                    else:
+                        retry_count += 1
+                        if retry_count < max_retries:
+                            print(f"SSL Error: {e}")
+                            print(f"Retrying connection ({retry_count}/{max_retries})...")
+                            time.sleep(2)
+                        else:
+                            print(f"Failed to connect after {max_retries} attempts")
+                            raise
+                except Exception as e:
+                    retry_count += 1
+                    if retry_count < max_retries:
+                        print(f"Connection error: {e}")
+                        print(f"Retrying connection ({retry_count}/{max_retries})...")
+                        time.sleep(2)
+                    else:
+                        print(f"Failed to connect after {max_retries} attempts")
+                        raise
         except Exception as e:
             print(f"Error connecting to MQTT broker: {e}")
+            raise
 
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
