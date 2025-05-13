@@ -83,14 +83,9 @@ COPY . .
 
 # Create startup script
 RUN echo '#!/bin/bash\n\
-# Set display\n\
 export DISPLAY=:0\n\
-\n\
-# Start window manager\n\
 matchbox-window-manager &\n\
 sleep 2\n\
-\n\
-# Start the application\n\
 python3 main.py\n\
 ' > /usr/src/app/start.sh && \
     chmod +x /usr/src/app/start.sh

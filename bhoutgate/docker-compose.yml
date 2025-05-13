@@ -13,6 +13,5 @@ services:
       - /dev:/dev
       - /run/udev:/run/udev:ro
     devices:
-      - /dev/tty0:/dev/tty0
       - /dev/dri:/dev/dri
     restart: always 
