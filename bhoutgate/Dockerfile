@@ -3,7 +3,7 @@ FROM balenalib/raspberrypi5-debian-python:3.10-bullseye
 # Enable udev for device access
 ENV UDEV=1
 
-# Install system dependencies for GUI and Qt
+# Install system dependencies for EGLFS and Qt
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libxkbcommon0 \
     libinput10 \
@@ -21,13 +21,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libqt6network6 \
     libqt6opengl6 \
     libqt6openglwidgets6 \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get update && apt-get install -y --no-install-recommends libxkbcommon0 \
-    && ls -l /usr/lib/aarch64-linux-gnu/libxkbcommon.so.0* || echo "libxkbcommon0 not found" \
-    && echo "Contents of /usr/lib/aarch64-linux-gnu/:" \
-    && ls -la /usr/lib/aarch64-linux-gnu/
+    && rm -rf /var/lib/apt/lists/*
 
-# Set Qt environment variables
+# Set Qt environment variables for EGLFS
 ENV QT_QPA_PLATFORM=eglfs
 ENV QT_DEBUG_PLUGINS=1
 ENV LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu:$LD_LIBRARY_PATH
@@ -43,21 +39,6 @@ RUN pip3 install --no-cache-dir --upgrade pip && \
 
 # Copy application code
 COPY . .
-
-# Create a debug script
-RUN echo '#!/bin/bash\n\
-echo "=== System Information ==="\n\
-echo "Current directory: $(pwd)"\n\
-echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"\n\
-echo "\n=== Library Search Paths ==="\n\
-ldconfig -p | grep xkbcommon\n\
-echo "\n=== Direct Library Check ==="\n\
-ls -l /usr/lib/aarch64-linux-gnu/libxkbcommon*\n\
-echo "\n=== Python Library Path ==="\n\
-python3 -c "import sys; print(sys.path)"\n\
-echo "\n=== Qt Plugin Paths ==="\n\
-python3 -c "from PySide6.QtCore import QCoreApplication; print(QCoreApplication.libraryPaths())"\n\
-' > /usr/src/app/debug.sh && chmod +x /usr/src/app/debug.sh
 
 # Set the entrypoint to run test script
 CMD ["python3", "test.py"] 
