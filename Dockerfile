@@ -33,6 +33,8 @@ RUN apt-get update && \
 # Set environment variables
 ENV UDEV=1
 ENV DISPLAY=:0
+ENV QT_QPA_PLATFORM=xcb
+ENV QT_DEBUG_PLUGINS=1
 
 # Set working directory
 WORKDIR /usr/src/app
@@ -50,10 +52,21 @@ COPY bhoutgate/ .
 
 # Create startup script
 RUN echo '#!/bin/bash\n\
+# Kill any existing X server\n\
+pkill Xorg || true\n\
+\n\
+# Start X server\n\
 Xorg :0 -nolisten tcp &\n\
-sleep 2\n\
+sleep 3\n\
+\n\
+# Set display\n\
+export DISPLAY=:0\n\
+\n\
+# Start window manager\n\
 matchbox-window-manager &\n\
 sleep 2\n\
+\n\
+# Start the application\n\
 python3 main.py\n\
 ' > /usr/src/app/start.sh && \
 chmod +x /usr/src/app/start.sh
