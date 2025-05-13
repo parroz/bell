@@ -44,5 +44,20 @@ RUN pip3 install --no-cache-dir --upgrade pip && \
 # Copy application code
 COPY . .
 
-# Set the entrypoint
-CMD ["python3", "main.py"] 
+# Create a debug script
+RUN echo '#!/bin/bash\n\
+echo "=== System Information ==="\n\
+echo "Current directory: $(pwd)"\n\
+echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"\n\
+echo "\n=== Library Search Paths ==="\n\
+ldconfig -p | grep xkbcommon\n\
+echo "\n=== Direct Library Check ==="\n\
+ls -l /usr/lib/aarch64-linux-gnu/libxkbcommon*\n\
+echo "\n=== Python Library Path ==="\n\
+python3 -c "import sys; print(sys.path)"\n\
+echo "\n=== Qt Plugin Paths ==="\n\
+python3 -c "from PySide6.QtCore import QCoreApplication; print(QCoreApplication.libraryPaths())"\n\
+' > /usr/src/app/debug.sh && chmod +x /usr/src/app/debug.sh
+
+# Set the entrypoint to run debug script first
+CMD ["/bin/bash", "-c", "/usr/src/app/debug.sh && python3 main.py"] 
