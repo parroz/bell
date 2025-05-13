@@ -1,5 +1,5 @@
 # Use Raspberry Pi 5 64-bit OS with Python (Debian Bullseye)
-FROM balenalib/raspberrypi5-64-python:3.10-bullseye-run
+FROM balenalib/raspberrypi5-debian-python:3.10-bullseye
 
 # Install system dependencies for GUI and Qt
 RUN apt-get update && \
