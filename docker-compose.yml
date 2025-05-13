@@ -1,9 +1,9 @@
-version: '3.8'
+version: '3.5'
 
 services:
-  mqtt-test:
-    build:
-      context: .
-      dockerfile: Dockerfile.local
-    extra_hosts:
-      - "host.docker.internal:host-gateway" 
+  bhoutgate:
+    build: .
+    privileged: true  # Required for camera access
+    environment:
+      - DISPLAY=:0
+    restart: always 
