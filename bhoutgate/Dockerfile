@@ -4,17 +4,14 @@ FROM balenalib/raspberrypi5-debian-python:3.10-bullseye
 ENV UDEV=1
 
 # Install system dependencies for GUI and Qt
-RUN apt-get update && apt-get install -y \
-    x11-xserver-utils \
-    matchbox-window-manager \
-    libxcb-xinerama0 \
-    libglu1-mesa \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libegl1-mesa \
     libgl1-mesa-dri \
     libgbm1 \
     libinput10 \
     libxkbcommon0 \
-    libxkbcommon-x11-0 \
+    libxcb-xinerama0 \
+    libglu1-mesa \
     libxcb-icccm4 \
     libxcb-image0 \
     libxcb-keysyms1 \
@@ -65,9 +62,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Set Qt environment variables
-ENV QT_QPA_PLATFORM=xcb
+ENV QT_QPA_PLATFORM=eglfs
 ENV QT_DEBUG_PLUGINS=1
-ENV DISPLAY=:0
 ENV LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu:$LD_LIBRARY_PATH
 
 # Set working directory
@@ -82,19 +78,5 @@ RUN pip3 install --no-cache-dir --upgrade pip && \
 # Copy application code
 COPY . .
 
-# Create startup script
-RUN echo '#!/bin/bash\n\
-# Set display\n\
-export DISPLAY=:0\n\
-\n\
-# Start window manager\n\
-matchbox-window-manager &\n\
-sleep 2\n\
-\n\
-# Start the application\n\
-python3 main.py\n\
-' > /usr/src/app/start.sh && \
-    chmod +x /usr/src/app/start.sh
-
 # Set the entrypoint
-CMD ["/usr/src/app/start.sh"] 
+CMD ["python3", "main.py"] 

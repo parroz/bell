@@ -5,11 +5,10 @@ services:
     privileged: true
     network_mode: host
     environment:
-      - DISPLAY=:0
-      - QT_QPA_PLATFORM=xcb
+      - UDEV=1
+      - QT_QPA_PLATFORM=eglfs
       - QT_DEBUG_PLUGINS=1
     volumes:
-      - /tmp/.X11-unix:/tmp/.X11-unix
       - /dev:/dev
       - /run/udev:/run/udev:ro
     devices:
