@@ -5,9 +5,6 @@ ENV UDEV=1
 
 # Install system dependencies for GUI and Qt
 RUN apt-get update && apt-get install -y \
-    xvfb \
-    x11vnc \
-    xauth \
     x11-xserver-utils \
     matchbox-window-manager \
     libxcb-xinerama0 \
@@ -35,11 +32,10 @@ RUN apt-get update && apt-get install -y \
     libqt6xcbqpa6 \
     && rm -rf /var/lib/apt/lists/*
 
-# Set display for X11
-ENV DISPLAY=:0
+# Set Qt environment variables
 ENV QT_QPA_PLATFORM=xcb
 ENV QT_DEBUG_PLUGINS=1
-ENV QT_X11_NO_MITSHM=1
+ENV DISPLAY=:0
 
 # Set working directory
 WORKDIR /usr/src/app
@@ -55,13 +51,6 @@ COPY . .
 
 # Create startup script
 RUN echo '#!/bin/bash\n\
-# Kill any existing X server\n\
-pkill Xvfb || true\n\
-\n\
-# Start Xvfb with specific options\n\
-Xvfb :0 -screen 0 1024x768x24 -ac +extension GLX +render -noreset &\n\
-sleep 3\n\
-\n\
 # Set display\n\
 export DISPLAY=:0\n\
 \n\

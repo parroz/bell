@@ -10,4 +10,9 @@ services:
       - QT_DEBUG_PLUGINS=1
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
+      - /dev:/dev
+      - /run/udev:/run/udev:ro
+    devices:
+      - /dev/tty0:/dev/tty0
+      - /dev/dri:/dev/dri
     restart: always 
