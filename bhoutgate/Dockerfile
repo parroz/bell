@@ -30,6 +30,38 @@ RUN apt-get update && apt-get install -y \
     libqt6core6 \
     libqt6dbus6 \
     libqt6xcbqpa6 \
+    libqt6network6 \
+    libqt6opengl6 \
+    libqt6openglwidgets6 \
+    libqt6svg6 \
+    libqt6svgwidgets6 \
+    libqt6waylandclient6 \
+    libqt6waylandcompositor6 \
+    libqt6waylandeglclient6 \
+    libqt6waylandeglcompositor6 \
+    libqt6waylandserver6 \
+    libqt6waylandtools6 \
+    libqt6waylandwidgets6 \
+    libqt6xcbqpa6 \
+    libqt6xcbqpa-dev \
+    libxcb1 \
+    libxcb1-dev \
+    libxcb-icccm4 \
+    libxcb-icccm4-dev \
+    libxcb-image0 \
+    libxcb-image0-dev \
+    libxcb-keysyms1 \
+    libxcb-keysyms1-dev \
+    libxcb-randr0 \
+    libxcb-randr0-dev \
+    libxcb-render-util0 \
+    libxcb-render-util0-dev \
+    libxcb-xfixes0 \
+    libxcb-xfixes0-dev \
+    libxcb-shape0 \
+    libxcb-shape0-dev \
+    libxcb-xkb1 \
+    libxcb-xkb1-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Set Qt environment variables
