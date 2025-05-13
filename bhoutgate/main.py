@@ -1,104 +1,131 @@
 import sys
-import os
 import json
-import time
-from datetime import datetime
+import os
+import ssl
+from PySide6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget, QLineEdit
+from PySide6.QtCore import Qt, QTimer, QUrl, Signal, QObject
+from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
+from PySide6.QtMultimediaWidgets import QVideoWidget
+from PySide6.QtGui import QPixmap
 import paho.mqtt.client as mqtt
-from dotenv import load_dotenv
-import tkinter as tk
-from tkinter import ttk, scrolledtext
-from tkinter import messagebox
 
-# Load environment variables
-load_dotenv()
+class MQTTClient(QObject):
+    message_received = Signal(str)
+    connected = Signal()
 
-# MQTT Configuration
-MQTT_BROKER = os.getenv('MQTT_BROKER', 'localhost')
-MQTT_PORT = int(os.getenv('MQTT_PORT', '1883'))
-MQTT_USERNAME = os.getenv('MQTT_USERNAME', '')
-MQTT_PASSWORD = os.getenv('MQTT_PASSWORD', '')
-MQTT_TOPIC = os.getenv('MQTT_TOPIC', 'bhout/doorbell/event/open-door')
+    def __init__(self, config):
+        super().__init__()
+        self.config = config
+        self.client = None
+        self.is_connected = False
+        self.reconnect_timer = None
+        self.setup_client()
 
-# Load configuration
-def load_config():
-    try:
-        with open('config/config.json', 'r') as f:
-            return json.load(f)
-    except Exception as e:
-        print(f"Error loading config: {e}")
-        return {}
+    def setup_client(self):
+        if self.client is not None:
+            try:
+                self.client.disconnect()
+                self.client.loop_stop()
+            except:
+                pass
+            self.client = None
 
-config = load_config()
-
-class DoorbellApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("BHOUT Gate Control")
-        self.root.geometry("800x600")
-        
-        # Initialize MQTT client
-        self.mqtt_client = mqtt.Client()
-        self.mqtt_client.on_connect = self.on_connect
-        self.mqtt_client.on_message = self.on_message
-        
-        # Connect to MQTT broker
-        if MQTT_USERNAME and MQTT_PASSWORD:
-            self.mqtt_client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
+        print("\n=== MQTT Client Setup ===")
+        print(f"Creating new MQTT client instance")
+        self.client = mqtt.Client()
+        self.client.on_connect = self.on_connect
+        self.client.on_message = self.on_message
+        self.client.on_disconnect = self.on_disconnect
+        self.client.on_publish = self.on_publish
         
         try:
-            self.mqtt_client.connect(MQTT_BROKER, MQTT_PORT, 60)
-            self.mqtt_client.loop_start()
+            print("\n=== TLS Configuration ===")
+            print(f"CA cert path: {self.config['mqtt']['ca_cert']}")
+            print(f"Client cert path: {self.config['mqtt']['client_cert']}")
+            print(f"Client key path: {self.config['mqtt']['client_key']}")
+            
+            # Check if certificate files exist
+            for cert_file in [self.config['mqtt']['ca_cert'], self.config['mqtt']['client_cert'], self.config['mqtt']['client_key']]:
+                if not os.path.exists(cert_file):
+                    print(f"WARNING: Certificate file does not exist: {cert_file}")
+                else:
+                    print(f"Certificate file exists: {cert_file}")
+            
+            self.client.tls_set(
+                ca_certs=self.config['mqtt']['ca_cert'],
+                certfile=self.config['mqtt']['client_cert'],
+                keyfile=self.config['mqtt']['client_key'],
+                cert_reqs=ssl.CERT_REQUIRED,
+                tls_version=ssl.PROTOCOL_TLS,
+                ciphers=None
+            )
+            self.client.tls_insecure_set(False)
+            # Set the hostname for TLS verification
+            self.client._hostname = self.config['mqtt']['broker']
+            print("TLS configuration successful")
         except Exception as e:
-            messagebox.showerror("Connection Error", 
-                               f"Failed to connect to MQTT broker: {str(e)}")
+            print(f"Error configuring TLS: {e}")
+            raise
         
-        # Create main frame
-        main_frame = ttk.Frame(root, padding="10")
-        main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
-        
-        # Status label
-        self.status_label = ttk.Label(main_frame, text="Status: Disconnected")
-        self.status_label.grid(row=0, column=0, columnspan=2, pady=5)
-        
-        # Log display
-        self.log_display = scrolledtext.ScrolledText(main_frame, height=20)
-        self.log_display.grid(row=1, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
-        
-        # Control buttons
-        self.open_button = ttk.Button(main_frame, text="Open Door", command=self.open_door)
-        self.open_button.grid(row=2, column=0, pady=5, padx=5)
-        
-        self.close_button = ttk.Button(main_frame, text="Close Door", command=self.close_door)
-        self.close_button.grid(row=2, column=1, pady=5, padx=5)
-        
-        # Configure grid weights
-        main_frame.columnconfigure(0, weight=1)
-        main_frame.columnconfigure(1, weight=1)
-        main_frame.rowconfigure(1, weight=1)
-        
-        # Set up status update
-        self.update_status()
-        
-        self.log("Application started")
-    
+        try:
+            print("\n=== MQTT Connection ===")
+            broker = self.config['mqtt']['broker']
+            port = self.config['mqtt']['port']
+            print(f"Attempting to connect to MQTT broker at {broker}:{port}")
+            self.client.connect(broker, port, 60)
+            self.client.loop_start()
+            print("MQTT client loop started")
+        except Exception as e:
+            print(f"Error connecting to MQTT broker: {e}")
+            self.schedule_reconnect()
+
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
-            self.status_label.config(text="Status: Connected")
-            self.log("Connected to MQTT broker")
-            # Subscribe to the doorbell event topic
-            client.subscribe(MQTT_TOPIC)
+            print("Connected to MQTT broker successfully")
+            self.is_connected = True
+            subscribe_topic = self.config['mqtt']['topics']['subscribe']
+            print(f"Subscribing to topic: {subscribe_topic}")
+            client.subscribe(subscribe_topic)
+            self.connected.emit()
         else:
-            self.status_label.config(text=f"Status: Connection failed (code {rc})")
-            self.log(f"Failed to connect to MQTT broker (code {rc})")
-    
+            print(f"Failed to connect to MQTT broker, return code: {rc}")
+            self.is_connected = False
+            self.schedule_reconnect()
+
+    def on_publish(self, client, userdata, mid):
+        print(f"Message published successfully (mid: {mid})")
+
+    def on_disconnect(self, client, userdata, rc):
+        print("Disconnected from MQTT broker")
+        self.is_connected = False
+        if rc != 0:
+            self.schedule_reconnect()
+
+    def schedule_reconnect(self):
+        if self.reconnect_timer is not None:
+            self.reconnect_timer.stop()
+        
+        self.reconnect_timer = QTimer()
+        self.reconnect_timer.setSingleShot(True)
+        self.reconnect_timer.timeout.connect(self.setup_client)
+        self.reconnect_timer.start(5000)
+
     def on_message(self, client, userdata, msg):
+        print(f"Received message on {msg.topic}: {msg.payload.decode()}")
+        if msg.topic == self.config['mqtt']['topics']['subscribe']:
+            self.message_received.emit(msg.payload.decode())
+
+    def publish(self, topic, message):
+        if not self.is_connected:
+            print("Not connected to MQTT broker, cannot publish")
+            return
         try:
-            payload = msg.payload.decode()
-            self.log(f"Received message on {msg.topic}: {payload}")
-            
-            # Handle the doorbell event
-            if msg.topic == MQTT_TOPIC:
-                self.handle_doorbell_event(payload)
+            print(f"Publishing to {topic}: {message}")
+            result = self.client.publish(topic, message, qos=1)
+            print(f"Publish result: {result}")
+            if result.rc != mqtt.MQTT_ERR_SUCCESS:
+                print(f"Error publishing message: {result.rc}")
+                self.schedule_reconnect()
         except Exception as e:
             print(f"Error publishing message: {e}")
             self.schedule_reconnect()
@@ -148,47 +175,228 @@ class BHOUTGate(QMainWindow):
             print(f"Error loading config: {e}")
             return {}
     
-    def open_door(self):
-        try:
-            # Publish open door command
-            self.mqtt_client.publish(MQTT_TOPIC, json.dumps({
-                'command': 'open',
-                'timestamp': datetime.now().isoformat()
-            }))
-            self.log("Open door command sent")
-        except Exception as e:
-            self.log(f"Error sending open door command: {str(e)}")
+    def setup_ui(self):
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        layout = QVBoxLayout(central_widget)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        
+        # Create video widget
+        self.video_widget = QVideoWidget()
+        self.video_widget.setStyleSheet("background-color: black;")
+        layout.addWidget(self.video_widget)
+        
+        # Create status label
+        self.status_label = QLabel()
+        self.status_label.setAlignment(Qt.AlignCenter)
+        self.status_label.setStyleSheet("font-size: 24px; font-weight: bold;")
+        layout.addWidget(self.status_label)
+        
+        # Create hidden QR input field
+        self.qr_input = QLineEdit()
+        self.qr_input.setReadOnly(True)
+        self.qr_input.setVisible(False)
+        self.qr_input.returnPressed.connect(self.handle_qr_input)
+        layout.addWidget(self.qr_input)
+        
+        # Hide status initially
+        self.status_label.hide()
     
-    def close_door(self):
-        try:
-            # Publish close door command
-            self.mqtt_client.publish(MQTT_TOPIC, json.dumps({
-                'command': 'close',
-                'timestamp': datetime.now().isoformat()
-            }))
-            self.log("Close door command sent")
-        except Exception as e:
-            self.log(f"Error sending close door command: {str(e)}")
-    
-    def update_status(self):
-        if self.mqtt_client.is_connected():
-            self.status_label.config(text="Status: Connected")
+    def setup_media(self):
+        # Setup video player
+        self.media_player = QMediaPlayer()
+        self.media_player.setVideoOutput(self.video_widget)
+        self.media_player.mediaStatusChanged.connect(self.handle_media_status)
+        self.media_player.positionChanged.connect(self.handle_position_changed)
+        self.media_player.durationChanged.connect(self.handle_duration_changed)
+        
+        # Setup audio player for bell sound
+        self.audio_output = QAudioOutput()
+        self.bell_player = QMediaPlayer()
+        self.bell_player.setAudioOutput(self.audio_output)
+        self.bell_player.mediaStatusChanged.connect(self.handle_bell_status)
+        
+        # Load and pause video initially
+        video_path = self.config['media']['video_path']
+        if os.path.exists(video_path):
+            print(f"Loading video from: {video_path}")
+            self.media_player.setSource(QUrl.fromLocalFile(video_path))
+            self.media_player.pause()
+            self.media_player.setPosition(0)
+            print("Video loaded and paused")
         else:
-            self.status_label.config(text="Status: Disconnected")
-        self.root.after(1000, self.update_status)  # Update every second
+            print("No video file configured or file not found")
     
-    def log(self, message):
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        self.log_display.insert(tk.END, f"[{timestamp}] {message}\n")
-        self.log_display.see(tk.END)  # Scroll to the end
+    def show_idle(self):
+        if self.timeout_timer and self.timeout_timer.isActive():
+            self.timeout_timer.stop()
+        self.timeout_timer = None
+        
+        self.media_player.pause()
+        self.media_player.setPosition(0)
+        
+        self.status_label.hide()
+        
+        print("Returned to idle mode")
     
-    def on_closing(self):
-        self.mqtt_client.loop_stop()
-        self.mqtt_client.disconnect()
-        self.root.destroy()
+    def resizeEvent(self, event):
+        if self.logo_label and self.logo_label.isVisible():
+            logo_path = self.config['media']['logo_path']
+            if os.path.exists(logo_path):
+                pixmap = QPixmap(logo_path)
+                scaled_pixmap = pixmap.scaled(self.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.logo_label.setPixmap(scaled_pixmap)
+        super().resizeEvent(event)
+    
+    def mousePressEvent(self, event):
+        if self.video_widget.isVisible() and not self.status_label.isVisible():
+            self.play_animation()
+    
+    def play_animation(self):
+        print("Starting animation")
+        
+        # Send button press message
+        button_press = {"ringing": True}
+        import json
+        self.mqtt_client.publish(self.config['mqtt']['topics']['button_press'], json.dumps(button_press))
+        
+        # Play bell sound
+        bell_path = self.config['media']['bell_sound_path']
+        if os.path.exists(bell_path):
+            self.bell_player.setSource(QUrl.fromLocalFile(bell_path))
+            self.bell_player.play()
+            print("Playing bell sound")
+        
+        # Play video animation
+        print("Playing video")
+        self.media_player.setPosition(0)
+        self.media_player.play()
+    
+    def handle_duration_changed(self, duration):
+        print(f"Video duration: {duration}ms")
+        self.video_duration = duration
+    
+    def handle_position_changed(self, position):
+        print(f"Video position: {position}ms")
+        if hasattr(self, 'video_duration') and position >= self.video_duration - 100:
+            print("Video completed one cycle, pausing")
+            self.media_player.pause()
+            self.media_player.setPosition(0)
+    
+    def handle_media_status(self, status):
+        print(f"Media status changed: {status}")
+        if status == QMediaPlayer.MediaStatus.EndOfMedia:
+            print("Video ended")
+            self.media_player.pause()
+            self.media_player.setPosition(0)
+    
+    def handle_bell_status(self, status):
+        if status == QMediaPlayer.MediaStatus.EndOfMedia:
+            self.bell_player.stop()
+    
+    def handle_access_response(self, response):
+        if self.timeout_timer and self.timeout_timer.isActive():
+            self.timeout_timer.stop()
+        
+        try:
+            # Parse the response JSON
+            import json
+            response_data = json.loads(response)
+            
+            if response_data.get("open", False):
+                # Send command to Shelly door control
+                shelly_command = {
+                    "id": 1,
+                    "src": "bhout-mqtt-cli",
+                    "method": "Switch.Set",
+                    "params": {
+                        "id": 0,
+                        "on": True
+                    }
+                }
+                self.mqtt_client.publish("doorshelly/rpc", json.dumps(shelly_command))
+                print("Sent door open command to Shelly")
+                
+                self.play_animation()
+            else:
+                # Get the reason if provided
+                reason = response_data.get("reason", "")
+                if reason:
+                    print(f"Access denied: {reason}")
+                    self.show_denial_reason(reason)
+                else:
+                    print("Access denied")
+                    self.show_denial_reason("")
+        except json.JSONDecodeError as e:
+            print(f"Error parsing response: {e}")
+            self.show_denial_reason("Invalid response format")
+        except Exception as e:
+            print(f"Error handling response: {e}")
+            self.show_denial_reason("Error processing response")
+    
+    def show_denial_reason(self, reason):
+        print(f"Access denied: {reason}")
+        
+        if reason:
+            self.status_label.setText(f"Access Denied: {reason}")
+        else:
+            self.status_label.setText("Access Denied")
+            
+        self.status_label.setStyleSheet("""
+            font-size: 24px;
+            font-weight: bold;
+            color: red;
+            background-color: black;
+            padding: 20px;
+            border-radius: 10px;
+        """)
+        
+        self.status_label.show()
+        
+        self.timeout_timer = QTimer()
+        self.timeout_timer.setSingleShot(True)
+        self.timeout_timer.timeout.connect(self.show_idle)
+        self.timeout_timer.start(self.config['ui']['denial_display_time'] * 1000)
+
+    def on_mqtt_connected(self):
+        print("MQTT client connected and ready")
+    
+    def handle_qr_input(self):
+        qr_data = self.qr_input.text()
+        print(f"QR Code scanned: {qr_data}")
+        
+        # Format the message as JSON
+        from datetime import datetime
+        message = {
+            "message": {
+                "data": {
+                    "type": "QRCode",
+                    "data": qr_data,
+                    "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+                }
+            }
+        }
+        
+        # Convert to JSON string
+        import json
+        json_message = json.dumps(message)
+        print(f"Publishing message: {json_message}")
+        
+        self.mqtt_client.publish(self.config['mqtt']['topics']['publish'], json_message)
+        self.qr_input.clear()
+    
+    def keyPressEvent(self, event):
+        if event.key() != Qt.Key_Return and event.key() != Qt.Key_Enter:
+            self.qr_input.setText(self.qr_input.text() + event.text())
+        else:
+            self.qr_input.returnPressed.emit()
+    
+    def closeEvent(self, event):
+        super().closeEvent(event)
 
 if __name__ == '__main__':
-    root = tk.Tk()
-    app = DoorbellApp(root)
-    root.protocol("WM_DELETE_WINDOW", app.on_closing)
-    root.mainloop() 
+    app = QApplication(sys.argv)
+    window = BHOUTGate()
+    window.show()
+    sys.exit(app.exec()) 
