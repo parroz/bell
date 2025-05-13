@@ -33,13 +33,13 @@ ENV LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu:$LD_LIBRARY_PATH
 WORKDIR /usr/src/app
 
 # Copy requirements and install Python dependencies
-COPY requirements.txt .
+COPY bhoutgate/requirements.txt .
 RUN pip3 install --no-cache-dir --upgrade pip && \
     pip3 install --no-cache-dir wheel setuptools && \
     pip3 install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY . .
+COPY bhoutgate/ .
 
 # Set the entrypoint to run test script
 CMD ["python3", "test.py"] 
