@@ -1,9 +1,7 @@
 version: '3.8'
 
 services:
-  mqtt-test:
+  bhoutgate:
     build:
       context: .
-      dockerfile: Dockerfile.local
-    extra_hosts:
-      - "host.docker.internal:host-gateway" 
+      dockerfile: Dockerfile 

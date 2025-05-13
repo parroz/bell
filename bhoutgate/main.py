@@ -142,7 +142,7 @@ class BHOUTGate(QMainWindow):
         self.status_label = None
         
         # Load configuration
-        self.load_config()
+        self.config = self.load_config()
         
         # Setup UI first
         self.setup_ui()
@@ -168,27 +168,12 @@ class BHOUTGate(QMainWindow):
         self.show_idle()
     
     def load_config(self):
-        config_path = 'config/config.json'
         try:
-            with open(config_path, 'r') as f:
-                self.config = json.load(f)
-                
-            # Override MQTT broker settings with environment variables
-            broker = os.getenv('MQTT_BROKER')
-            port = os.getenv('MQTT_PORT')
-            
-            if broker:
-                print(f"Overriding MQTT broker with environment variable: {broker}")
-                self.config['mqtt']['broker'] = broker
-            
-            if port:
-                print(f"Overriding MQTT port with environment variable: {port}")
-                self.config['mqtt']['port'] = int(port)
-            
-            print(f"Final MQTT configuration: broker={self.config['mqtt']['broker']}, port={self.config['mqtt']['port']}")
+            with open('config/config.json', 'r') as f:
+                return json.load(f)
         except Exception as e:
             print(f"Error loading config: {e}")
-            raise
+            return {}
     
     def setup_ui(self):
         central_widget = QWidget()
