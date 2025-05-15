@@ -23,6 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
     libgl1-mesa-glx \
     libdouble-conversion3 \
+    libxcb-cursor0 \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /usr/lib/aarch64-linux-gnu/libQt6*
 
