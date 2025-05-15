@@ -1,10 +1,10 @@
-# Use Raspberry Pi 5 64-bit OS with Python (Debian Bullseye)
-FROM balenalib/raspberrypi5-debian-python:3.10-bullseye
+# Use Raspberry Pi 5 64-bit OS with Python (Debian Bookworm)
+FROM balenalib/raspberrypi5-debian-python:3.10-bookworm
 
 # Enable udev for device access
 ENV UDEV=1
 
-# Install minimal system dependencies for EGLFS and audio
+# Install system dependencies for EGLFS, audio, and Qt6
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libxkbcommon0 \
     libinput10 \
@@ -14,6 +14,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgbm1 \
     libdrm2 \
     libpulse0 \
+    qt6-base-dev \
+    qt6-base-plugins \
+    qt6-declarative-dev \
+    qt6-wayland \
+    qt6-virtualkeyboard-plugin \
+    qt6-qpa-plugins \
     && rm -rf /var/lib/apt/lists/*
 
 # Set Qt environment variables for EGLFS
