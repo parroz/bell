@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libfontconfig1 \
     libgl1 \
     libgl1-mesa-glx \
+    libdouble-conversion3 \
     && rm -rf /var/lib/apt/lists/*
 
 # Set Qt environment variables for EGLFS
