@@ -15,6 +15,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libdrm2 \
     libpulse0 \
     libfontconfig1 \
+    libgl1 \
+    libgl1-mesa-glx \
     && rm -rf /var/lib/apt/lists/*
 
 # Set Qt environment variables for EGLFS
@@ -27,10 +29,11 @@ WORKDIR /usr/src/app
 
 # Copy requirements and install Python dependencies
 COPY bhoutgate/requirements.txt .
-RUN pip3 install --no-cache-dir --upgrade pip && \
-    pip3 install --no-cache-dir wheel setuptools && \
-    pip3 install --no-cache-dir -r requirements.txt && \
-    pip3 install --no-cache-dir PySide6==6.5.3
+RUN pip3 install --no-cache-dir --root-user-action --upgrade pip && \
+    pip3 install --no-cache-dir --root-user-action wheel setuptools && \
+    pip3 install --no-cache-dir --root-user-action -r requirements.txt && \
+    pip3 install --no-cache-dir --root-user-action PySide6==6.5.3
+
 
 # Copy application code
 COPY bhoutgate/ .
