@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
     libgl1-mesa-glx \
     libdouble-conversion3 \
-    libqt6eglfskmsgbmintegration6 \
+    libqt6gui6-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Set Qt environment variables for EGLFS
