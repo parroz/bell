@@ -19,13 +19,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1-mesa-glx \
     libdouble-conversion3 \
     libqt6gui6 \
-    libqt6eglfskmsgbmintegration6 \
     && rm -rf /var/lib/apt/lists/*
 
 # Set Qt environment variables for EGLFS
 ENV QT_QPA_PLATFORM=eglfs
 ENV QT_DEBUG_PLUGINS=1
-ENV LD_LIBRARY_PATH=/usr/local/lib/python3.10/site-packages/PySide6/Qt/lib:$LD_LIBRARY_PATH
+ENV LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu:/usr/local/lib/python3.10/site-packages/PySide6/Qt/lib:$LD_LIBRARY_PATH
 
 # Set working directory
 WORKDIR /usr/src/app
