@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     qt6-wayland \
     qt6-virtualkeyboard-plugin \
     qt6-qpa-plugins \
+    libqt6gui6 \
     && rm -rf /var/lib/apt/lists/*
 
 # Set Qt environment variables for EGLFS
