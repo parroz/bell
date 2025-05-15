@@ -10,16 +10,16 @@ import sys
 import json
 import os
 import ssl
-from PySide6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget, QLineEdit
-from PySide6.QtCore import Qt, QTimer, QUrl, Signal, QObject
-from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
-from PySide6.QtMultimediaWidgets import QVideoWidget
-from PySide6.QtGui import QPixmap
+from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget, QLineEdit
+from PyQt6.QtCore import Qt, QTimer, QUrl, pyqtSignal, QObject
+from PyQt6.QtMultimedia import QMediaPlayer, QAudioOutput
+from PyQt6.QtMultimediaWidgets import QVideoWidget
+from PyQt6.QtGui import QPixmap
 import paho.mqtt.client as mqtt
 
 class MQTTClient(QObject):
-    message_received = Signal(str)
-    connected = Signal()
+    message_received = pyqtSignal(str)
+    connected = pyqtSignal()
 
     def __init__(self, config):
         super().__init__()

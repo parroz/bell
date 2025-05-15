@@ -20,13 +20,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     qt6-virtualkeyboard-plugin \
     qt6-qpa-plugins \
     libqt6gui6 \
+    python3-pyqt6 \
+    python3-pyqt6.qtcore \
+    python3-pyqt6.qtgui \
+    python3-pyqt6.qtwidgets \
     && rm -rf /var/lib/apt/lists/*
 
 # Set Qt environment variables for EGLFS
 ENV QT_QPA_PLATFORM=eglfs
 ENV QT_DEBUG_PLUGINS=1
 ENV LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu:$LD_LIBRARY_PATH
-ENV QT_QPA_PLATFORM_PLUGIN_PATH=/usr/local/lib/python3.10/site-packages/PySide6/Qt/plugins/platforms
+ENV QT_QPA_PLATFORM_PLUGIN_PATH=/usr/lib/python3/dist-packages/PyQt6/Qt6/plugins/platforms
 
 # Set working directory
 WORKDIR /usr/src/app
