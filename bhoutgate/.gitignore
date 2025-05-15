@@ -1,6 +1,6 @@
 # Certificates
-config/static/*.crt
-config/static/*.key
+# config/static/*.crt
+# config/static/*.key
 
 # Python
 __pycache__/
