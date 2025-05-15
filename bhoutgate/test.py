@@ -184,10 +184,11 @@ def main():
 
     mqtt_client = MQTTClient(config)
     
-    # Keep the script running
+    # Keep the script running and publish a heartbeat message every 30 seconds
     try:
         while True:
-            time.sleep(1)
+            mqtt_client.publish("bhout/doorbell/heartbeat", "Heartbeat message")
+            time.sleep(30)
     except KeyboardInterrupt:
         print("\nShutting down...")
         if mqtt_client.client:
