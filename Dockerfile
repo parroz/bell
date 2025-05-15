@@ -14,6 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgbm1 \
     libdrm2 \
     libpulse0 \
+    libfontconfig1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Set Qt environment variables for EGLFS
