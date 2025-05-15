@@ -4,16 +4,7 @@ FROM balenalib/raspberrypi5-debian-python:3.10-bullseye
 # Enable udev for device access
 ENV UDEV=1
 
-# Add Qt6 repository
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gnupg2 \
-    software-properties-common \
-    wget \
-    && rm -rf /var/lib/apt/lists/* \
-    && wget -qO- https://download.qt.io/official_releases/qt/6.8/6.8.0/installer/keys/qt-6.8.0-repo.gpg | gpg --dearmor > /usr/share/keyrings/qt-6.8.0-repo.gpg \
-    && echo "deb [signed-by=/usr/share/keyrings/qt-6.8.0-repo.gpg] https://download.qt.io/official_releases/qt/6.8/6.8.0/debian bullseye main" > /etc/apt/sources.list.d/qt-6.8.0.list
-
-# Install system dependencies for EGLFS and Qt
+# Install minimal system dependencies for EGLFS and audio
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libxkbcommon0 \
     libinput10 \
@@ -22,17 +13,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1-mesa-dri \
     libgbm1 \
     libdrm2 \
-    qt6-base-dev \
-    qt6-base-dev-tools \
-    libqt6gui6 \
-    libqt6widgets6 \
-    libqt6core6 \
-    libqt6dbus6 \
-    libqt6network6 \
-    libqt6opengl6 \
-    libqt6openglwidgets6 \
-    libqt6eglfsdeviceintegration6 \
-    libqt6eglfs-kms-integration6 \
     libpulse0 \
     && rm -rf /var/lib/apt/lists/*
 
@@ -40,6 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV QT_QPA_PLATFORM=eglfs
 ENV QT_DEBUG_PLUGINS=1
 ENV LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu:$LD_LIBRARY_PATH
+ENV QT_QPA_PLATFORM_PLUGIN_PATH=/usr/local/lib/python3.10/site-packages/PySide6/Qt/plugins/platforms
 
 # Set working directory
 WORKDIR /usr/src/app
