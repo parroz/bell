@@ -21,9 +21,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     qt6-qpa-plugins \
     libqt6gui6 \
     python3-pyqt6 \
-    python3-pyqt6.qtcore \
-    python3-pyqt6.qtgui \
-    python3-pyqt6.qtwidgets \
     && rm -rf /var/lib/apt/lists/*
 
 # Set Qt environment variables for EGLFS
