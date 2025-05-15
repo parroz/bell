@@ -15,7 +15,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libdrm2 \
     libpulse0 \
     qt6-base-dev \
-    qt6-base-bin \
     qt6-declarative-dev \
     qt6-wayland \
     qt6-virtualkeyboard-plugin \
