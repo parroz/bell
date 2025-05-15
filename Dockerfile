@@ -29,7 +29,7 @@ COPY bhoutgate/requirements.txt .
 RUN pip3 install --no-cache-dir --upgrade pip && \
     pip3 install --no-cache-dir wheel setuptools && \
     pip3 install --no-cache-dir -r requirements.txt && \
-    pip3 install --no-cache-dir PySide6==6.5.2
+    pip3 install --no-cache-dir PySide6==6.5.3
 
 # Copy application code
 COPY bhoutgate/ .
