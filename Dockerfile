@@ -8,6 +8,7 @@ ENV UDEV=1
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gnupg2 \
     software-properties-common \
+    wget \
     && rm -rf /var/lib/apt/lists/* \
     && wget -qO- https://download.qt.io/official_releases/qt/6.8/6.8.0/installer/keys/qt-6.8.0-repo.gpg | gpg --dearmor > /usr/share/keyrings/qt-6.8.0-repo.gpg \
     && echo "deb [signed-by=/usr/share/keyrings/qt-6.8.0-repo.gpg] https://download.qt.io/official_releases/qt/6.8/6.8.0/debian bullseye main" > /etc/apt/sources.list.d/qt-6.8.0.list
