@@ -59,4 +59,4 @@ RUN pip3 install --no-cache-dir --upgrade pip && \
 COPY bhoutgate/ .
 
 # Set the entrypoint to run main script
-CMD ["sh", "-c", "Xorg :0 & sleep 2 && DISPLAY=:0 python3 main.py"] 
+CMD ["/bin/sh"] 
