@@ -60,5 +60,5 @@ RUN ls -la config/static/
 # Set the entrypoint to run Balena's entry script
 ENTRYPOINT ["/usr/bin/entry.sh"]
 
-# Set the command to run the test script
+# Set the command to run the main script
 CMD ["python3", "main.py"] 
