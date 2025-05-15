@@ -37,6 +37,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxcb-xkb1 \
     libxkbcommon-x11-0 \
     xfonts-base xfonts-100dpi xfonts-75dpi \
+    gstreamer1.0-plugins-base \
+    gstreamer1.0-plugins-good \
+    gstreamer1.0-plugins-bad \
+    gstreamer1.0-plugins-ugly \
+    gstreamer1.0-libav \
+    gstreamer1.0-pulseaudio \
+    pulseaudio \
     && rm -rf /var/lib/apt/lists/*
 
 # Set Qt environment variables for X11
@@ -61,5 +68,5 @@ RUN pip3 install --no-cache-dir --upgrade pip && \
 # Copy application code
 COPY bhoutgate/ .
 
-# Start Xorg and then the app
-CMD ["sh", "-c", "Xorg :0 & sleep 2 && DISPLAY=:0 python3 main.py"] 
+# Start PulseAudio and then Xorg and then the app
+CMD ["sh", "-c", "pulseaudio --start && Xorg :0 & sleep 2 && DISPLAY=:0 python3 main.py"] 
