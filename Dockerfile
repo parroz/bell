@@ -18,7 +18,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
     libgl1-mesa-glx \
     libdouble-conversion3 \
-    libqt6gui6 \
     && rm -rf /var/lib/apt/lists/*
 
 # Set Qt environment variables for EGLFS
@@ -35,7 +34,6 @@ RUN pip3 install --no-cache-dir --upgrade pip && \
     pip3 install --no-cache-dir --root-user-action=ignore wheel setuptools && \
     pip3 install --no-cache-dir --root-user-action=ignore -r requirements.txt && \
     pip3 install --no-cache-dir --root-user-action=ignore PySide6==6.5.3
-
 
 # Copy application code
 COPY bhoutgate/ .
