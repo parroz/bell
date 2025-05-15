@@ -1,3 +1,4 @@
+# Force rebuild: 2024-05-15
 # Use Raspberry Pi 5 64-bit OS with Python (Debian Bookworm)
 FROM balenalib/raspberrypi5-debian-python:3.10-bookworm
 
