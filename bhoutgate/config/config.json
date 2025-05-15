@@ -22,5 +22,8 @@
     "ui": {
         "timeout_seconds": 5,
         "denial_display_time": 3
+    },
+    "heartbeat": {
+        "periodicity_seconds": 30
     }
 } 

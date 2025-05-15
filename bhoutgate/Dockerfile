@@ -61,4 +61,4 @@ RUN ls -la config/static/
 ENTRYPOINT ["/usr/bin/entry.sh"]
 
 # Set the command to run the test script
-CMD ["python3", "test.py"] 
+CMD ["python3", "main.py"] 

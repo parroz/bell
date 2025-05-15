@@ -166,6 +166,11 @@ class BHOUTGate(QMainWindow):
         
         # Start in idle mode
         self.show_idle()
+        
+        # Start heartbeat timer
+        self.heartbeat_timer = QTimer()
+        self.heartbeat_timer.timeout.connect(self.send_heartbeat)
+        self.heartbeat_timer.start(self.config['heartbeat']['periodicity_seconds'] * 1000)
     
     def load_config(self):
         try:
@@ -394,6 +399,9 @@ class BHOUTGate(QMainWindow):
     
     def closeEvent(self, event):
         super().closeEvent(event)
+
+    def send_heartbeat(self):
+        self.mqtt_client.publish("bhout/doorbell/heartbeat", "Heartbeat message")
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
