@@ -1,11 +1,10 @@
-# Force rebuild: 2024-05-15
 # Use Raspberry Pi 5 64-bit OS with Python (Debian Bookworm)
 FROM balenalib/raspberrypi5-debian-python:3.10-bookworm
 
 # Enable udev for device access
 ENV UDEV=1
 
-# Install minimal system dependencies for X11 and Qt
+# Install X11, xcb, and font libraries
 RUN apt-get update && apt-get install -y --no-install-recommends \
     xserver-xorg \
     xinit \
@@ -37,13 +36,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxcb-xinerama0 \
     libxcb-xkb1 \
     libxkbcommon-x11-0 \
-    && rm -rf /var/lib/apt/lists/* \
-    && rm -rf /usr/lib/aarch64-linux-gnu/libQt6*
+    xfonts-base xfonts-100dpi xfonts-75dpi \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set Qt environment variables for X11
 ENV QT_QPA_PLATFORM=xcb
 ENV QT_DEBUG_PLUGINS=1
 ENV LD_LIBRARY_PATH=/usr/local/lib/python3.10/site-packages/PySide6/Qt/lib
+
+# Create Xorg config for modesetting
+RUN mkdir -p /etc/X11/xorg.conf.d && \
+    printf 'Section "Device"\n    Identifier "Card0"\n    Driver "modesetting"\n    Option "kmsdev" "/dev/dri/card0"\nEndSection\n' > /etc/X11/xorg.conf.d/10-docker.conf
 
 # Set working directory
 WORKDIR /usr/src/app
@@ -58,5 +61,5 @@ RUN pip3 install --no-cache-dir --upgrade pip && \
 # Copy application code
 COPY bhoutgate/ .
 
-# Set the entrypoint to run main script
-CMD ["/bin/sh"] 
+# Start Xorg and then the app
+CMD ["sh", "-c", "Xorg :0 & sleep 2 && DISPLAY=:0 python3 main.py"] 
