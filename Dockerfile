@@ -22,6 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libqt5network5 \
     libqt5opengl5 \
     libqt5opengl5-dev \
+    libpulse0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Set Qt environment variables for EGLFS
