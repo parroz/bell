@@ -1,3 +1,4 @@
+print("Starting BHOUTGate main application...")
 import sys
 import json
 import os
