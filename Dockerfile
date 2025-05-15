@@ -41,5 +41,5 @@ RUN pip3 install --no-cache-dir --upgrade pip && \
 # Copy application code
 COPY bhoutgate/ .
 
-# Set the entrypoint to run test script
-CMD ["python3", "test.py"] 
+# Set the entrypoint to run main script
+CMD ["python3", "main.py"] 
