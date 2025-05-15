@@ -1,4 +1,11 @@
 print("Starting BHOUTGate main application...")
+print("Loading configuration...")
+print("Setting up UI...")
+print("Setting up MQTT client...")
+print("Initializing media players...")
+print("Showing full screen...")
+print("Starting in idle mode...")
+print("Starting heartbeat timer...")
 import sys
 import json
 import os
