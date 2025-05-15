@@ -44,4 +44,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gstreamer1.0-libav \
     gstreamer1.0-pulseaudio \
     pulseaudio \
+    gstreamer1.0-tools \
+    && rm -rf /var/lib/apt/lists/*
+   
+CMD ["sh", "-c", "pulseaudio --start && Xorg :0 & sleep 2 && DISPLAY=:0 python3 main.py"]
    
