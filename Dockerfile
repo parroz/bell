@@ -4,8 +4,13 @@ FROM balenalib/raspberrypi5-debian-python:3.10-bookworm
 # Enable udev for device access
 ENV UDEV=1
 
-# Install only minimal system dependencies for EGLFS and audio
+# Install minimal system dependencies for X11 and Qt
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    xserver-xorg \
+    xinit \
+    libx11-6 \
+    libxext6 \
+    libxrender1 \
     libxkbcommon0 \
     libinput10 \
     libevdev2 \
@@ -18,10 +23,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
     libgl1-mesa-glx \
     libdouble-conversion3 \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /usr/lib/aarch64-linux-gnu/libQt6*
 
-# Set Qt environment variables for EGLFS
-ENV QT_QPA_PLATFORM=eglfs
+# Set Qt environment variables for X11
+ENV QT_QPA_PLATFORM=xcb
 ENV QT_DEBUG_PLUGINS=1
 ENV LD_LIBRARY_PATH=/usr/local/lib/python3.10/site-packages/PySide6/Qt/lib
 
@@ -39,4 +45,4 @@ RUN pip3 install --no-cache-dir --upgrade pip && \
 COPY bhoutgate/ .
 
 # Set the entrypoint to run main script
-CMD ["python3", "main.py"] 
+CMD ["sh", "-c", "Xorg :0 & sleep 2 && DISPLAY=:0 python3 main.py"] 
