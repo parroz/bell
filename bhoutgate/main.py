@@ -199,6 +199,8 @@ class BHOUTGate(QMainWindow):
         self.video_widget.setFixedSize(self.screen_width, self.screen_height)
         self.video_widget.setAspectRatioMode(Qt.IgnoreAspectRatio)
         self.setCentralWidget(self.video_widget)
+        self.video_widget.show()
+        print("Video widget geometry:", self.video_widget.geometry())
 
         # Create status label (hidden by default)
         self.status_label = QLabel(self)
