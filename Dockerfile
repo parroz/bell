@@ -15,10 +15,26 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libdrm2 \
     libpulse0 \
     libfontconfig1 \
+    libgl1 \
+    xserver-xorg \
+    xinit \
+    x11-xserver-utils \
+    x11-apps \
+    gstreamer1.0-tools \
+    gstreamer1.0-plugins-bad \
+    gstreamer1.0-plugins-good \
+    gstreamer1.0-plugins-ugly \
+    gstreamer1.0-libav \
+    gstreamer1.0-pulseaudio \
+    gstreamer1.0-alsa \
+    gstreamer1.0-x \
+    gstreamer1.0-gl \
+    alsa-utils \
+    pulseaudio \
     && rm -rf /var/lib/apt/lists/*
 
-# Set Qt environment variables for EGLFS
-ENV QT_QPA_PLATFORM=eglfs
+# Set Qt environment variables for X11
+ENV QT_QPA_PLATFORM=xcb
 ENV QT_DEBUG_PLUGINS=1
 ENV LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu:$LD_LIBRARY_PATH
 
