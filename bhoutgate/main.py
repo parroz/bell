@@ -196,7 +196,27 @@ class BHOUTGate(QMainWindow):
         self.video_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.video_widget.show()
         self.video_widget.mousePressEvent = self.mousePressEvent
+<<<<<<< HEAD
         self.setCentralWidget(self.video_widget)
+=======
+        layout.addWidget(self.video_widget, stretch=1)
+        
+        # Create status label
+        self.status_label = QLabel()
+        self.status_label.setAlignment(Qt.AlignCenter)
+        self.status_label.setStyleSheet("font-size: 24px; font-weight: bold;")
+        layout.addWidget(self.status_label, stretch=0)
+        
+        # Create hidden QR input field
+        self.qr_input = QLineEdit()
+        self.qr_input.setReadOnly(True)
+        self.qr_input.setVisible(False)
+        self.qr_input.returnPressed.connect(self.handle_qr_input)
+        layout.addWidget(self.qr_input, stretch=0)
+        
+        # Hide status initially
+        self.status_label.hide()
+>>>>>>> 8e12c84 (Make video widget expand to fill available space (fullscreen video, minimal change))
     
     def setup_media(self):
         # Setup video player
