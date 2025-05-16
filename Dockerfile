@@ -37,6 +37,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxcb-xkb1 \
     libxkbcommon-x11-0 \
     xfonts-base xfonts-100dpi xfonts-75dpi \
+    gstreamer1.0-tools \
+    gstreamer1.0-plugins-bad \
+    gstreamer1.0-plugins-good \
+    gstreamer1.0-plugins-ugly \
+    gstreamer1.0-libav \
+    gstreamer1.0-pulseaudio \
+    gstreamer1.0-alsa \
+    gstreamer1.0-x \
+    gstreamer1.0-gl \
+    alsa-utils \
+    pulseaudio \
+    x11-apps \
+    x11-xserver-utils \
     && rm -rf /var/lib/apt/lists/*
 
 # Set Qt environment variables for X11
@@ -63,6 +76,7 @@ COPY bhoutgate/ .
 
 # Install all required GStreamer plugins, X11 utilities, and audio support for 800x480 HDMI video playback
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    gstreamer1.0-tools \
     gstreamer1.0-plugins-bad \
     gstreamer1.0-plugins-good \
     gstreamer1.0-plugins-ugly \
