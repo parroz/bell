@@ -36,6 +36,7 @@ RUN pip3 install --no-cache-dir --root-user-action --upgrade pip && \
 # Copy application code
 COPY bhoutgate/ .
 
+<<<<<<< HEAD
 # Install all required GStreamer plugins, X11 utilities, and audio support for 800x480 HDMI video playback
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gstreamer1.0-tools \
@@ -58,3 +59,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Start PulseAudio, Xorg, and then the app
 CMD ["sh", "-c", "sleep 3600"]
+=======
+# Set the entrypoint to run main script
+CMD ["sh", "-c", "rm -f /tmp/.X0-lock && Xorg :0 & sleep 2 && DISPLAY=:0 python3 main.py"] 
+>>>>>>> fd5ca92 (Fix pip install commands for correct --root-user-action usage and upgrade pip separately)
