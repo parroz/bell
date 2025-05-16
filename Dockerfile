@@ -37,4 +37,4 @@ RUN pip3 install --no-cache-dir --root-user-action --upgrade pip && \
 COPY bhoutgate/ .
 
 # Set the entrypoint to run main script
-CMD ["sh", "-c", "pgrep Xorg || (Xorg :0 & sleep 2); DISPLAY=:0 python3 main.py"] 
+CMD ["sh", "-c", "rm -f /tmp/.X0-lock && Xorg :0 & sleep 2 && DISPLAY=:0 python3 main.py"] 
