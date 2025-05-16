@@ -17,6 +17,8 @@ from PySide6.QtMultimediaWidgets import QVideoWidget
 from PySide6.QtGui import QPixmap
 import paho.mqtt.client as mqtt
 
+os.environ["GST_VIDEOSINK"] = "glimagesink"
+
 class MQTTClient(QObject):
     message_received = Signal(str)
     connected = Signal()
@@ -198,6 +200,8 @@ class BHOUTGate(QMainWindow):
         # Create video widget
         self.video_widget = QVideoWidget()
         self.video_widget.setStyleSheet("background-color: black;")
+        self.video_widget.show()
+        self.video_widget.mousePressEvent = self.mousePressEvent
         layout.addWidget(self.video_widget)
         
         # Create status label
@@ -232,6 +236,8 @@ class BHOUTGate(QMainWindow):
         
         # Load and pause video initially
         video_path = self.config['media']['video_path']
+        if not os.path.isabs(video_path):
+            video_path = os.path.abspath(video_path)
         if os.path.exists(video_path):
             print(f"Loading video from: {video_path}")
             self.media_player.setSource(QUrl.fromLocalFile(video_path))
