@@ -10,7 +10,7 @@ import sys
 import json
 import os
 import ssl
-from PySide6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget, QLineEdit
+from PySide6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget, QLineEdit, QSizePolicy
 from PySide6.QtCore import Qt, QTimer, QUrl, Signal, QObject
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 from PySide6.QtMultimediaWidgets import QVideoWidget
@@ -200,9 +200,10 @@ class BHOUTGate(QMainWindow):
         # Create video widget
         self.video_widget = QVideoWidget()
         self.video_widget.setStyleSheet("background-color: black;")
+        self.video_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.video_widget.show()
         self.video_widget.mousePressEvent = self.mousePressEvent
-        layout.addWidget(self.video_widget)
+        layout.addWidget(self.video_widget, stretch=1)
         
         # Create status label
         self.status_label = QLabel()
