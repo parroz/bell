@@ -300,6 +300,7 @@ class BHOUTGate(QMainWindow):
             self.bell_player.stop()
     
     def handle_access_response(self, response):
+        print(f"Raw access response: {response}")  # Debug: show full response
         if self.timeout_timer and self.timeout_timer.isActive():
             self.timeout_timer.stop()
         
@@ -330,14 +331,14 @@ class BHOUTGate(QMainWindow):
                     print(f"Access denied: {reason}")
                     self.show_denial_reason(reason)
                 else:
-                    print("Access denied")
-                    self.show_denial_reason("")
+                    print("Access denied (no reason in response)")
+                    self.show_denial_reason("No reason provided by backend")
         except json.JSONDecodeError as e:
             print(f"Error parsing response: {e}")
-            self.show_denial_reason("Invalid response format")
+            self.show_denial_reason(f"Invalid response format: {response}")
         except Exception as e:
             print(f"Error handling response: {e}")
-            self.show_denial_reason("Error processing response")
+            self.show_denial_reason(f"Error processing response: {e}")
     
     def show_denial_reason(self, reason):
         print(f"Access denied: {reason}")
@@ -346,7 +347,7 @@ class BHOUTGate(QMainWindow):
             self.status_label.setText(f"Access Denied: {reason}")
         else:
             self.status_label.setText("Access Denied")
-            
+        
         self.status_label.setStyleSheet("""
             font-size: 24px;
             font-weight: bold;
@@ -355,8 +356,9 @@ class BHOUTGate(QMainWindow):
             padding: 20px;
             border-radius: 10px;
         """)
-        
         self.status_label.show()
+        self.status_label.raise_()  # Ensure label is on top
+        self.status_label.repaint()  # Force repaint in case of update issues
         
         self.timeout_timer = QTimer()
         self.timeout_timer.setSingleShot(True)
