@@ -10,7 +10,7 @@ import sys
 import json
 import os
 import ssl
-from PySide6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget, QLineEdit, QSizePolicy, QGraphicsView, QGraphicsScene, QGraphicsTextItem, QStackedWidget
+from PySide6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget, QLineEdit, QSizePolicy, QGraphicsView, QGraphicsScene, QGraphicsTextItem, QGraphicsRectItem
 from PySide6.QtCore import Qt, QTimer, QUrl, Signal, QObject, QRectF
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 from PySide6.QtMultimediaWidgets import QVideoWidget
