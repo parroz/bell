@@ -191,7 +191,6 @@ class BHOUTGate(QMainWindow):
             return {}
     
     def setup_ui(self):
-        # Detect screen size
         self.screen_width = 720
         self.screen_height = 720
         print(f"Forcing screen size: {self.screen_width}x{self.screen_height}")
@@ -200,6 +199,10 @@ class BHOUTGate(QMainWindow):
         self.video_widget.setFixedSize(self.screen_width, self.screen_height)
         self.video_widget.setAspectRatioMode(Qt.IgnoreAspectRatio)
         self.setCentralWidget(self.video_widget)
+
+        # Create status label (hidden by default)
+        self.status_label = QLabel(self)
+        self.status_label.hide()
     
     def setup_media(self):
         # Setup video player
