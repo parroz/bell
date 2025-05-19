@@ -205,8 +205,18 @@ class BHOUTGate(QMainWindow):
         self.video_widget.show()
         print("Video widget geometry:", self.video_widget.geometry())
         
-        # Create status label (hidden by default)
-        self.status_label = QLabel(self)
+        # Create status label as a child of video widget
+        self.status_label = QLabel(self.video_widget)
+        self.status_label.setAlignment(Qt.AlignCenter)
+        self.status_label.setGeometry(0, 0, self.screen_width, self.screen_height)
+        self.status_label.setStyleSheet("""
+            font-size: 24px;
+            font-weight: bold;
+            color: red;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+        """)
         self.status_label.hide()
     
     def setup_media(self):
@@ -348,17 +358,10 @@ class BHOUTGate(QMainWindow):
         else:
             self.status_label.setText("Access Denied")
         
-        self.status_label.setStyleSheet("""
-            font-size: 24px;
-            font-weight: bold;
-            color: red;
-            background-color: black;
-            padding: 20px;
-            border-radius: 10px;
-        """)
-        self.status_label.raise_()  # Ensure label is on top
+        # Ensure label is on top and visible
+        self.status_label.raise_()
         self.status_label.show()
-        self.status_label.repaint()  # Force repaint in case of update issues
+        self.status_label.repaint()  # Force repaint
         
         self.timeout_timer = QTimer()
         self.timeout_timer.setSingleShot(True)
