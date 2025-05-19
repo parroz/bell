@@ -16,6 +16,7 @@ from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 from PySide6.QtMultimediaWidgets import QGraphicsVideoItem
 from PySide6.QtGui import QPixmap, QColor, QBrush, QPen, QFont, QPainter
 import paho.mqtt.client as mqtt
+import subprocess
 
 os.environ["GST_VIDEOSINK"] = "glimagesink"
 
@@ -252,12 +253,6 @@ class BHOUTGate(QMainWindow):
         self.media_player.positionChanged.connect(self.handle_position_changed)
         self.media_player.durationChanged.connect(self.handle_duration_changed)
         
-        # Setup audio player for bell sound
-        self.audio_output = QAudioOutput()
-        self.bell_player = QMediaPlayer()
-        self.bell_player.setAudioOutput(self.audio_output)
-        self.bell_player.mediaStatusChanged.connect(self.handle_bell_status)
-        
         # Load and pause video initially
         video_path = self.config['media']['video_path']
         if not os.path.isabs(video_path):
@@ -302,11 +297,7 @@ class BHOUTGate(QMainWindow):
         self.mqtt_client.publish(self.config['mqtt']['topics']['button_press'], json.dumps(button_press))
         
         # Play bell sound
-        bell_path = self.config['media']['bell_sound_path']
-        if os.path.exists(bell_path):
-            self.bell_player.setSource(QUrl.fromLocalFile(bell_path))
-            self.bell_player.play()
-            print("Playing bell sound")
+        self.play_bell_sound()
         
         # Play video animation
         print("Playing video")
@@ -330,10 +321,6 @@ class BHOUTGate(QMainWindow):
             print("Video ended")
             self.media_player.pause()
             self.media_player.setPosition(0)
-    
-    def handle_bell_status(self, status):
-        if status == QMediaPlayer.MediaStatus.EndOfMedia:
-            self.bell_player.stop()
     
     def handle_access_response(self, response):
         print(f"Raw access response: {response}")  # Debug: show full response
@@ -463,6 +450,23 @@ class BHOUTGate(QMainWindow):
             print("Startup video finished, returning to idle mode")
             self.media_player.mediaStatusChanged.disconnect(self._on_startup_video_status)
             self.show_idle()
+
+    def play_bell_sound(self):
+        # Try WAV first, then MP3
+        bell_wav = os.path.join('/usr/src/app/config/static/bell.wav')
+        bell_mp3 = os.path.join('/usr/src/app/config/static/doorbell.mp3')
+        
+        try:
+            if os.path.exists(bell_wav):
+                print(f"Playing WAV bell sound: {bell_wav}")
+                subprocess.Popen(['aplay', '-D', 'hw:0,0', bell_wav])
+            elif os.path.exists(bell_mp3):
+                print(f"Playing MP3 bell sound: {bell_mp3}")
+                subprocess.Popen(['mpg123', '-a', 'hw:0,0', bell_mp3])
+            else:
+                print("No bell sound files found")
+        except Exception as e:
+            print(f"Error playing bell sound: {e}")
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
