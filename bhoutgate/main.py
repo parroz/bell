@@ -174,6 +174,9 @@ class BHOUTGate(QMainWindow):
         # Show full screen after everything is set up
         self.showFullScreen()
         
+        # Play video once at startup, then go to idle
+        QTimer.singleShot(0, self.play_video_once_at_startup)
+        
         # Start in idle mode
         self.show_idle()
         
@@ -398,6 +401,19 @@ class BHOUTGate(QMainWindow):
 
     def send_heartbeat(self):
         self.mqtt_client.publish("bhout/doorbell/heartbeat", "Heartbeat message")
+
+    def play_video_once_at_startup(self):
+        print("Playing video once at startup")
+        self.media_player.setPosition(0)
+        self.media_player.play()
+        # When video finishes, go to idle
+        self.media_player.mediaStatusChanged.connect(self._on_startup_video_status)
+
+    def _on_startup_video_status(self, status):
+        if status == QMediaPlayer.MediaStatus.EndOfMedia:
+            print("Startup video finished, returning to idle mode")
+            self.media_player.mediaStatusChanged.disconnect(self._on_startup_video_status)
+            self.show_idle()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
