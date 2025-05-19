@@ -64,5 +64,30 @@ RUN pip3 install --no-cache-dir --upgrade pip && \
 # Copy application code
 COPY bhoutgate/ .
 
+<<<<<<< HEAD
 # Set the entrypoint to run main script
 CMD ["sh", "-c", "rm -f /tmp/.X0-lock && Xorg :0 & sleep 2 && DISPLAY=:0 python3 main.py"] 
+=======
+# Install all required GStreamer plugins, X11 utilities, and audio support for 800x480 HDMI video playback
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gstreamer1.0-tools \
+    gstreamer1.0-plugins-bad \
+    gstreamer1.0-plugins-good \
+    gstreamer1.0-plugins-ugly \
+    gstreamer1.0-libav \
+    gstreamer1.0-pulseaudio \
+    gstreamer1.0-alsa \
+    gstreamer1.0-x \
+    gstreamer1.0-gl \
+    alsa-utils \
+    pulseaudio \
+    x11-apps \
+    x11-xserver-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+# Tested working pipeline for 800x480 HDMI:
+# gst-launch-1.0 filesrc location=/usr/src/app/config/static/video.mp4 ! decodebin ! videoconvert ! videoscale ! video/x-raw,width=800,height=480 ! glimagesink
+
+# Start PulseAudio, Xorg, and then the app
+CMD ["sh", "-c", "sleep 3600"] 
+>>>>>>> a6bda67 (Debug: set CMD to sleep 3600 to keep container alive for troubleshooting)
