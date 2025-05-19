@@ -10,11 +10,11 @@ import sys
 import json
 import os
 import ssl
-from PySide6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget, QLineEdit, QSizePolicy
-from PySide6.QtCore import Qt, QTimer, QUrl, Signal, QObject
+from PySide6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget, QLineEdit, QSizePolicy, QGraphicsView, QGraphicsScene, QGraphicsTextItem
+from PySide6.QtCore import Qt, QTimer, QUrl, Signal, QObject, QRectF
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 from PySide6.QtMultimediaWidgets import QVideoWidget
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QPixmap, QColor, QBrush, QPen, QFont
 import paho.mqtt.client as mqtt
 
 os.environ["GST_VIDEOSINK"] = "glimagesink"
@@ -197,37 +197,67 @@ class BHOUTGate(QMainWindow):
         self.screen_width = 720
         self.screen_height = 720
         print(f"Forcing screen size: {self.screen_width}x{self.screen_height}")
+        
+        # Create main widget and layout
+        main_widget = QWidget()
+        self.setCentralWidget(main_widget)
+        layout = QVBoxLayout(main_widget)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        
+        # Create video widget
         self.video_widget = QVideoWidget()
         self.video_widget.setStyleSheet("background-color: black;")
         self.video_widget.setFixedSize(self.screen_width, self.screen_height)
         self.video_widget.setAspectRatioMode(Qt.IgnoreAspectRatio)
-        self.setCentralWidget(self.video_widget)
-        self.video_widget.show()
-        print("Video widget geometry:", self.video_widget.geometry())
+        layout.addWidget(self.video_widget)
         
-        # Create overlay widget
-        self.overlay = QWidget(self.video_widget)
-        self.overlay.setGeometry(0, 0, self.screen_width, self.screen_height)
-        self.overlay.setStyleSheet("background-color: transparent;")
+        # Create graphics view for overlay
+        self.overlay_view = QGraphicsView()
+        self.overlay_view.setFixedSize(self.screen_width, self.screen_height)
+        self.overlay_view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.overlay_view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.overlay_view.setStyleSheet("background: transparent;")
+        self.overlay_view.setAttribute(Qt.WA_TransparentForMouseEvents)
+        self.overlay_view.setAttribute(Qt.WA_TranslucentBackground)
         
-        # Create status label inside overlay
-        self.status_label = QLabel(self.overlay)
-        self.status_label.setAlignment(Qt.AlignCenter)
-        self.status_label.setGeometry(0, 20, self.screen_width, 100)
-        self.status_label.setStyleSheet("""
-            font-size: 48px;
-            font-weight: bold;
-            color: red;
-            background-color: rgba(0, 0, 0, 0.9);
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px;
-        """)
-        self.status_label.setAttribute(Qt.WA_TransparentForMouseEvents)
-        self.status_label.setAttribute(Qt.WA_TranslucentBackground)
+        # Create scene for the overlay
+        self.overlay_scene = QGraphicsScene()
+        self.overlay_scene.setSceneRect(0, 0, self.screen_width, self.screen_height)
+        self.overlay_view.setScene(self.overlay_scene)
+        
+        # Create text item for denial message
+        self.denial_text = QGraphicsTextItem()
+        self.denial_text.setDefaultTextColor(QColor(255, 0, 0))  # Red color
+        font = QFont()
+        font.setPointSize(36)
+        font.setBold(True)
+        self.denial_text.setFont(font)
+        
+        # Create background rectangle for text
+        self.text_background = self.overlay_scene.addRect(
+            QRectF(0, 20, self.screen_width, 100),
+            QPen(Qt.NoPen),
+            QBrush(QColor(0, 0, 0, 230))  # Semi-transparent black
+        )
+        self.text_background.setZValue(0)
+        
+        # Add text to scene
+        self.overlay_scene.addItem(self.denial_text)
+        self.denial_text.setZValue(1)
+        
+        # Position text in the center of the background
+        self.denial_text.setPos(0, 20)
+        self.denial_text.setTextWidth(self.screen_width)
+        self.denial_text.setDefaultTextColor(QColor(255, 0, 0))
+        
+        # Add overlay view to layout
+        layout.addWidget(self.overlay_view)
         
         # Hide overlay initially
-        self.overlay.hide()
+        self.overlay_view.hide()
+        
+        print("UI setup complete")
     
     def setup_media(self):
         # Setup video player
@@ -264,8 +294,7 @@ class BHOUTGate(QMainWindow):
         self.media_player.pause()
         self.media_player.setPosition(0)
         
-        self.overlay.hide()
-        self.status_label.hide()
+        self.overlay_view.hide()
         
         print("Returned to idle mode")
     
@@ -365,27 +394,27 @@ class BHOUTGate(QMainWindow):
         print(f"Access denied: {reason}")
         
         if reason:
-            self.status_label.setText(f"Access Denied: {reason}")
+            self.denial_text.setPlainText(f"Access Denied: {reason}")
         else:
-            self.status_label.setText("Access Denied")
+            self.denial_text.setPlainText("Access Denied")
         
-        # Show overlay and ensure it's on top
-        self.overlay.raise_()
-        self.overlay.show()
-        self.status_label.raise_()
-        self.status_label.show()
+        # Center the text
+        self.denial_text.setPos(0, 20)
+        self.denial_text.setTextWidth(self.screen_width)
+        
+        # Show overlay
+        self.overlay_view.raise_()
+        self.overlay_view.show()
         
         # Force updates
-        self.overlay.repaint()
-        self.status_label.repaint()
-        self.video_widget.update()
+        self.overlay_view.viewport().update()
+        self.overlay_scene.update()
         
         # Add debug prints
-        print(f"Overlay geometry: {self.overlay.geometry()}")
-        print(f"Overlay is visible: {self.overlay.isVisible()}")
-        print(f"Status label geometry: {self.status_label.geometry()}")
-        print(f"Status label is visible: {self.status_label.isVisible()}")
-        print(f"Status label text: {self.status_label.text()}")
+        print(f"Overlay view geometry: {self.overlay_view.geometry()}")
+        print(f"Overlay view is visible: {self.overlay_view.isVisible()}")
+        print(f"Denial text: {self.denial_text.toPlainText()}")
+        print(f"Text position: {self.denial_text.pos()}")
         
         self.timeout_timer = QTimer()
         self.timeout_timer.setSingleShot(True)
