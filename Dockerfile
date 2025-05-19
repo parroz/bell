@@ -95,4 +95,4 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # gst-launch-1.0 filesrc location=/usr/src/app/config/static/video.mp4 ! decodebin ! videoconvert ! videoscale ! video/x-raw,width=800,height=480 ! glimagesink
 
 # Start PulseAudio, Xorg, and then the app
-CMD ["sh", "-c", "pulseaudio --start && Xorg :0 & sleep 2 && DISPLAY=:0 python3 main.py"] 
+CMD ["sh", "-c", "sleep 3600"] 
