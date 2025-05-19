@@ -10,7 +10,7 @@ import sys
 import json
 import os
 import ssl
-from PySide6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget, QLineEdit, QSizePolicy, QGraphicsView, QGraphicsScene, QGraphicsTextItem
+from PySide6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget, QLineEdit, QSizePolicy, QGraphicsView, QGraphicsScene, QGraphicsTextItem, QStackedWidget
 from PySide6.QtCore import Qt, QTimer, QUrl, Signal, QObject, QRectF
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 from PySide6.QtMultimediaWidgets import QVideoWidget
@@ -205,29 +205,24 @@ class BHOUTGate(QMainWindow):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
         
-        # Create container widget for stacked layout
-        container = QWidget()
-        container.setFixedSize(self.screen_width, self.screen_height)
-        main_layout.addWidget(container)
-        
-        # Create stacked layout
-        self.stacked_layout = QVBoxLayout(container)
-        self.stacked_layout.setContentsMargins(0, 0, 0, 0)
-        self.stacked_layout.setSpacing(0)
+        # Create stacked widget
+        self.stacked_widget = QStackedWidget()
+        self.stacked_widget.setFixedSize(self.screen_width, self.screen_height)
+        main_layout.addWidget(self.stacked_widget)
         
         # Create video widget
         self.video_widget = QVideoWidget()
         self.video_widget.setStyleSheet("background-color: black;")
         self.video_widget.setFixedSize(self.screen_width, self.screen_height)
         self.video_widget.setAspectRatioMode(Qt.IgnoreAspectRatio)
-        self.stacked_layout.addWidget(self.video_widget)
+        self.stacked_widget.addWidget(self.video_widget)
         
         # Create overlay widget
         self.overlay_widget = QWidget()
         self.overlay_widget.setFixedSize(self.screen_width, self.screen_height)
         self.overlay_widget.setStyleSheet("background: transparent;")
         self.overlay_widget.setAttribute(Qt.WA_TransparentForMouseEvents)
-        self.stacked_layout.addWidget(self.overlay_widget)
+        self.stacked_widget.addWidget(self.overlay_widget)
         
         # Create status label in overlay widget
         self.status_label = QLabel(self.overlay_widget)
@@ -246,8 +241,8 @@ class BHOUTGate(QMainWindow):
         self.status_label.setAttribute(Qt.WA_TransparentForMouseEvents)
         self.status_label.hide()
         
-        # Hide overlay initially
-        self.overlay_widget.hide()
+        # Set video widget as current
+        self.stacked_widget.setCurrentWidget(self.video_widget)
         
         print("UI setup complete")
     
@@ -286,9 +281,8 @@ class BHOUTGate(QMainWindow):
         self.media_player.pause()
         self.media_player.setPosition(0)
         
-        self.overlay_widget.hide()
         self.status_label.hide()
-        self.video_widget.show()
+        self.stacked_widget.setCurrentWidget(self.video_widget)
         
         print("Returned to idle mode")
     
@@ -393,18 +387,15 @@ class BHOUTGate(QMainWindow):
             self.status_label.setText("Access Denied")
         
         # Show overlay and label
-        self.overlay_widget.show()
+        self.stacked_widget.setCurrentWidget(self.overlay_widget)
         self.status_label.show()
         
         # Force updates
-        self.overlay_widget.raise_()
-        self.status_label.raise_()
         self.overlay_widget.repaint()
         self.status_label.repaint()
         
         # Add debug prints
-        print(f"Overlay widget geometry: {self.overlay_widget.geometry()}")
-        print(f"Overlay widget is visible: {self.overlay_widget.isVisible()}")
+        print(f"Current widget: {self.stacked_widget.currentWidget()}")
         print(f"Status label geometry: {self.status_label.geometry()}")
         print(f"Status label is visible: {self.status_label.isVisible()}")
         print(f"Status label text: {self.status_label.text()}")
