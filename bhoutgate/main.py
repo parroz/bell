@@ -205,15 +205,19 @@ class BHOUTGate(QMainWindow):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
         
+        # Create a container widget for video and overlay
+        container = QWidget()
+        container.setFixedSize(self.screen_width, self.screen_height)
+        main_layout.addWidget(container)
+        
         # Create video widget
-        self.video_widget = QVideoWidget()
+        self.video_widget = QVideoWidget(container)
+        self.video_widget.setGeometry(0, 0, self.screen_width, self.screen_height)
         self.video_widget.setStyleSheet("background-color: black;")
-        self.video_widget.setFixedSize(self.screen_width, self.screen_height)
         self.video_widget.setAspectRatioMode(Qt.IgnoreAspectRatio)
-        main_layout.addWidget(self.video_widget)
         
         # Create graphics view for overlay
-        self.overlay_view = QGraphicsView(self.video_widget)
+        self.overlay_view = QGraphicsView(container)
         self.overlay_view.setGeometry(0, 0, self.screen_width, self.screen_height)
         self.overlay_view.setStyleSheet("background: transparent;")
         self.overlay_view.setAttribute(Qt.WA_TransparentForMouseEvents)
