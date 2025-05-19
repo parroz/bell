@@ -212,9 +212,9 @@ class BHOUTGate(QMainWindow):
         self.video_widget.setAspectRatioMode(Qt.IgnoreAspectRatio)
         layout.addWidget(self.video_widget)
         
-        # Create graphics view for overlay
-        self.overlay_view = QGraphicsView()
-        self.overlay_view.setFixedSize(self.screen_width, self.screen_height)
+        # Create graphics view for overlay as a child of video widget
+        self.overlay_view = QGraphicsView(self.video_widget)
+        self.overlay_view.setGeometry(0, 0, self.screen_width, self.screen_height)
         self.overlay_view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.overlay_view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.overlay_view.setStyleSheet("background: transparent;")
@@ -236,7 +236,7 @@ class BHOUTGate(QMainWindow):
         
         # Create background rectangle for text
         self.text_background = self.overlay_scene.addRect(
-            QRectF(0, 20, self.screen_width, 100),
+            QRectF(0, 0, self.screen_width, 100),
             QPen(Qt.NoPen),
             QBrush(QColor(0, 0, 0, 230))  # Semi-transparent black
         )
@@ -247,12 +247,9 @@ class BHOUTGate(QMainWindow):
         self.denial_text.setZValue(1)
         
         # Position text in the center of the background
-        self.denial_text.setPos(0, 20)
+        self.denial_text.setPos(0, 0)
         self.denial_text.setTextWidth(self.screen_width)
         self.denial_text.setDefaultTextColor(QColor(255, 0, 0))
-        
-        # Add overlay view to layout
-        layout.addWidget(self.overlay_view)
         
         # Hide overlay initially
         self.overlay_view.hide()
@@ -295,6 +292,7 @@ class BHOUTGate(QMainWindow):
         self.media_player.setPosition(0)
         
         self.overlay_view.hide()
+        self.video_widget.show()
         
         print("Returned to idle mode")
     
@@ -399,7 +397,7 @@ class BHOUTGate(QMainWindow):
             self.denial_text.setPlainText("Access Denied")
         
         # Center the text
-        self.denial_text.setPos(0, 20)
+        self.denial_text.setPos(0, 0)
         self.denial_text.setTextWidth(self.screen_width)
         
         # Show overlay
