@@ -356,8 +356,8 @@ class BHOUTGate(QMainWindow):
             padding: 20px;
             border-radius: 10px;
         """)
-        self.status_label.show()
         self.status_label.raise_()  # Ensure label is on top
+        self.status_label.show()
         self.status_label.repaint()  # Force repaint in case of update issues
         
         self.timeout_timer = QTimer()
