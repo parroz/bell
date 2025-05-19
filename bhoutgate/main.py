@@ -201,20 +201,36 @@ class BHOUTGate(QMainWindow):
         # Create main widget and layout
         main_widget = QWidget()
         self.setCentralWidget(main_widget)
-        layout = QVBoxLayout(main_widget)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
+        main_layout = QVBoxLayout(main_widget)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+        
+        # Create container widget for stacked layout
+        container = QWidget()
+        container.setFixedSize(self.screen_width, self.screen_height)
+        main_layout.addWidget(container)
+        
+        # Create stacked layout
+        self.stacked_layout = QVBoxLayout(container)
+        self.stacked_layout.setContentsMargins(0, 0, 0, 0)
+        self.stacked_layout.setSpacing(0)
         
         # Create video widget
         self.video_widget = QVideoWidget()
         self.video_widget.setStyleSheet("background-color: black;")
         self.video_widget.setFixedSize(self.screen_width, self.screen_height)
         self.video_widget.setAspectRatioMode(Qt.IgnoreAspectRatio)
-        layout.addWidget(self.video_widget)
+        self.stacked_layout.addWidget(self.video_widget)
         
-        # Create status label as a child of video widget
-        self.status_label = QLabel(self.video_widget)
-        # Position at bottom with some padding
+        # Create overlay widget
+        self.overlay_widget = QWidget()
+        self.overlay_widget.setFixedSize(self.screen_width, self.screen_height)
+        self.overlay_widget.setStyleSheet("background: transparent;")
+        self.overlay_widget.setAttribute(Qt.WA_TransparentForMouseEvents)
+        self.stacked_layout.addWidget(self.overlay_widget)
+        
+        # Create status label in overlay widget
+        self.status_label = QLabel(self.overlay_widget)
         self.status_label.setGeometry(0, self.screen_height - 120, self.screen_width, 100)
         self.status_label.setAlignment(Qt.AlignCenter)
         self.status_label.setStyleSheet("""
@@ -229,6 +245,9 @@ class BHOUTGate(QMainWindow):
         """)
         self.status_label.setAttribute(Qt.WA_TransparentForMouseEvents)
         self.status_label.hide()
+        
+        # Hide overlay initially
+        self.overlay_widget.hide()
         
         print("UI setup complete")
     
@@ -267,6 +286,7 @@ class BHOUTGate(QMainWindow):
         self.media_player.pause()
         self.media_player.setPosition(0)
         
+        self.overlay_widget.hide()
         self.status_label.hide()
         self.video_widget.show()
         
@@ -372,14 +392,19 @@ class BHOUTGate(QMainWindow):
         else:
             self.status_label.setText("Access Denied")
         
-        # Show label
-        self.status_label.raise_()
+        # Show overlay and label
+        self.overlay_widget.show()
         self.status_label.show()
         
         # Force updates
+        self.overlay_widget.raise_()
+        self.status_label.raise_()
+        self.overlay_widget.repaint()
         self.status_label.repaint()
         
         # Add debug prints
+        print(f"Overlay widget geometry: {self.overlay_widget.geometry()}")
+        print(f"Overlay widget is visible: {self.overlay_widget.isVisible()}")
         print(f"Status label geometry: {self.status_label.geometry()}")
         print(f"Status label is visible: {self.status_label.isVisible()}")
         print(f"Status label text: {self.status_label.text()}")
