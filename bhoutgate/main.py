@@ -205,10 +205,14 @@ class BHOUTGate(QMainWindow):
         self.video_widget.show()
         print("Video widget geometry:", self.video_widget.geometry())
         
-        # Create status label as a child of video widget
-        self.status_label = QLabel(self.video_widget)
+        # Create overlay widget
+        self.overlay = QWidget(self.video_widget)
+        self.overlay.setGeometry(0, 0, self.screen_width, self.screen_height)
+        self.overlay.setStyleSheet("background-color: transparent;")
+        
+        # Create status label inside overlay
+        self.status_label = QLabel(self.overlay)
         self.status_label.setAlignment(Qt.AlignCenter)
-        # Position at top of screen with some padding
         self.status_label.setGeometry(0, 20, self.screen_width, 100)
         self.status_label.setStyleSheet("""
             font-size: 48px;
@@ -219,9 +223,11 @@ class BHOUTGate(QMainWindow):
             border-radius: 5px;
             margin: 10px;
         """)
-        self.status_label.setAttribute(Qt.WA_TransparentForMouseEvents)  # Allow clicks to pass through
-        self.status_label.setAttribute(Qt.WA_TranslucentBackground)  # Make background translucent
-        self.status_label.hide()
+        self.status_label.setAttribute(Qt.WA_TransparentForMouseEvents)
+        self.status_label.setAttribute(Qt.WA_TranslucentBackground)
+        
+        # Hide overlay initially
+        self.overlay.hide()
     
     def setup_media(self):
         # Setup video player
@@ -258,6 +264,7 @@ class BHOUTGate(QMainWindow):
         self.media_player.pause()
         self.media_player.setPosition(0)
         
+        self.overlay.hide()
         self.status_label.hide()
         
         print("Returned to idle mode")
@@ -362,15 +369,20 @@ class BHOUTGate(QMainWindow):
         else:
             self.status_label.setText("Access Denied")
         
-        # Ensure label is on top and visible
+        # Show overlay and ensure it's on top
+        self.overlay.raise_()
+        self.overlay.show()
         self.status_label.raise_()
         self.status_label.show()
-        self.status_label.repaint()  # Force repaint
         
-        # Force update the video widget to ensure label is visible
+        # Force updates
+        self.overlay.repaint()
+        self.status_label.repaint()
         self.video_widget.update()
         
         # Add debug prints
+        print(f"Overlay geometry: {self.overlay.geometry()}")
+        print(f"Overlay is visible: {self.overlay.isVisible()}")
         print(f"Status label geometry: {self.status_label.geometry()}")
         print(f"Status label is visible: {self.status_label.isVisible()}")
         print(f"Status label text: {self.status_label.text()}")
