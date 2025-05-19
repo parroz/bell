@@ -16,6 +16,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpulse0 \
     libfontconfig1 \
     libgl1 \
+    libdouble-conversion3 \
+    libxcb-cursor0 \
     xserver-xorg \
     xinit \
     x11-xserver-utils \
@@ -33,6 +35,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     pulseaudio \
     && rm -rf /var/lib/apt/lists/*
 
+# Xorg DRM config for Raspberry Pi HDMI output
+RUN mkdir -p /etc/X11/xorg.conf.d && \
+    echo 'Section "Device"\n  Identifier "HDMI"\n  Driver "modesetting"\n  Option "kmsdev" "/dev/dri/card0"\nEndSection' > /etc/X11/xorg.conf.d/99-pi-drm.conf
+
+# NOTE: The following overlays must be set in /boot/config.txt on the host OS, not in Docker.
+# Documented here for reference:
+#   dtparam=i2c_arm=on
+#   dtoverlay=waveshare-4dpic-3b
+#   dtoverlay=waveshare-4dpic-4b
+#   dtoverlay=waveshare-4dpic-5b
+
 # Set Qt environment variables for X11
 ENV QT_QPA_PLATFORM=xcb
 ENV QT_DEBUG_PLUGINS=1
@@ -47,7 +60,6 @@ RUN pip3 install --no-cache-dir --upgrade pip && \
     pip3 install --no-cache-dir --root-user-action=ignore wheel setuptools && \
     pip3 install --no-cache-dir --root-user-action=ignore -r requirements.txt && \
     pip3 install --no-cache-dir --root-user-action=ignore PySide6==6.5.3
-
 
 # Copy application code
 COPY bhoutgate/ .
