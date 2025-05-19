@@ -108,3 +108,4 @@ RUN mkdir -p /etc/X11/xorg.conf.d && \
 
 # Start PulseAudio, Xorg (removing /tmp/.X0-lock if present), and then the app
 CMD ["sh", "-c", "rm -f /tmp/.X0-lock; pgrep Xorg || (Xorg :0 & sleep 2); DISPLAY=:0 python3 main.py"]
+ENV QT_PLUGIN_PATH=/usr/lib/aarch64-linux-gnu/qt5/plugins:/usr/local/lib/python3.10/site-packages/PySide6/Qt/plugins
