@@ -218,6 +218,7 @@ class BHOUTGate(QMainWindow):
         self.overlay_widget.setStyleSheet("background: transparent;")
         self.overlay_widget.setAttribute(Qt.WA_TransparentForMouseEvents)
         self.overlay_widget.setAttribute(Qt.WA_TranslucentBackground)
+        self.overlay_widget.raise_()  # Ensure overlay is on top
         
         # Create status label in overlay widget
         self.status_label = QLabel(self.overlay_widget)
@@ -225,15 +226,16 @@ class BHOUTGate(QMainWindow):
         self.status_label.setAlignment(Qt.AlignCenter)
         self.status_label.setStyleSheet("""
             QLabel {
-                background-color: rgba(0, 0, 0, 0.7);
+                background-color: rgba(0, 0, 0, 0.8);
                 color: white;
-                font-size: 32px;
+                font-size: 36px;
                 font-weight: bold;
                 padding: 10px;
                 border-radius: 5px;
             }
         """)
         self.status_label.setAttribute(Qt.WA_TransparentForMouseEvents)
+        self.status_label.setAttribute(Qt.WA_TranslucentBackground)
         self.status_label.hide()
         
         print("UI setup complete")
@@ -377,17 +379,20 @@ class BHOUTGate(QMainWindow):
         else:
             self.status_label.setText("Access Denied")
         
-        # Show label
-        self.status_label.show()
+        # Show label and ensure it's on top
+        self.overlay_widget.raise_()
         self.status_label.raise_()
+        self.status_label.show()
         
         # Force updates
         self.status_label.repaint()
+        self.overlay_widget.repaint()
         
         # Add debug prints
         print(f"Status label geometry: {self.status_label.geometry()}")
         print(f"Status label is visible: {self.status_label.isVisible()}")
         print(f"Status label text: {self.status_label.text()}")
+        print(f"Overlay widget is visible: {self.overlay_widget.isVisible()}")
         
         self.timeout_timer = QTimer()
         self.timeout_timer.setSingleShot(True)
