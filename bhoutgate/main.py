@@ -208,14 +208,16 @@ class BHOUTGate(QMainWindow):
         # Create status label as a child of video widget
         self.status_label = QLabel(self.video_widget)
         self.status_label.setAlignment(Qt.AlignCenter)
-        self.status_label.setGeometry(0, 0, self.screen_width, self.screen_height)
+        # Position at top of screen with some padding
+        self.status_label.setGeometry(0, 20, self.screen_width, 100)
         self.status_label.setStyleSheet("""
-            font-size: 36px;
+            font-size: 48px;
             font-weight: bold;
             color: red;
-            background-color: rgba(0, 0, 0, 0.8);
-            padding: 20px;
-            border-radius: 10px;
+            background-color: rgba(0, 0, 0, 0.9);
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px;
         """)
         self.status_label.setAttribute(Qt.WA_TransparentForMouseEvents)  # Allow clicks to pass through
         self.status_label.setAttribute(Qt.WA_TranslucentBackground)  # Make background translucent
@@ -367,6 +369,11 @@ class BHOUTGate(QMainWindow):
         
         # Force update the video widget to ensure label is visible
         self.video_widget.update()
+        
+        # Add debug prints
+        print(f"Status label geometry: {self.status_label.geometry()}")
+        print(f"Status label is visible: {self.status_label.isVisible()}")
+        print(f"Status label text: {self.status_label.text()}")
         
         self.timeout_timer = QTimer()
         self.timeout_timer.setSingleShot(True)
