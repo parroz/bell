@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libfontconfig1 \
     libgl1 \
     libdouble-conversion3 \
+    libxcb-cursor0 \
     xserver-xorg \
     xinit \
     x11-xserver-utils \
