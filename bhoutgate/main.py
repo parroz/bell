@@ -191,11 +191,19 @@ class BHOUTGate(QMainWindow):
             return {}
     
     def setup_ui(self):
+        # Detect screen size
+        screen = QApplication.primaryScreen()
+        if screen:
+            size = screen.size()
+            self.screen_width = size.width()
+            self.screen_height = size.height()
+        else:
+            self.screen_width = 720
+            self.screen_height = 720
+        print(f"Detected screen size: {self.screen_width}x{self.screen_height}")
         self.video_widget = QVideoWidget()
         self.video_widget.setStyleSheet("background-color: black;")
-        self.video_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.video_widget.show()
-        self.video_widget.mousePressEvent = self.mousePressEvent
+        self.video_widget.setFixedSize(self.screen_width, self.screen_height)
         self.setCentralWidget(self.video_widget)
     
     def setup_media(self):
