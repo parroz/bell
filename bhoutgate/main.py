@@ -204,7 +204,7 @@ class BHOUTGate(QMainWindow):
         self.setCentralWidget(self.video_widget)
         self.video_widget.show()
         print("Video widget geometry:", self.video_widget.geometry())
-
+        
         # Create status label (hidden by default)
         self.status_label = QLabel(self)
         self.status_label.hide()
