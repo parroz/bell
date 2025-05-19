@@ -199,6 +199,8 @@ class BHOUTGate(QMainWindow):
         self.video_widget.setFixedSize(self.screen_width, self.screen_height)
         self.video_widget.setAspectRatioMode(Qt.IgnoreAspectRatio)
         self.setCentralWidget(self.video_widget)
+        self.video_widget.show()
+        print("Video widget geometry:", self.video_widget.geometry())
 
         # Create status label (hidden by default)
         self.status_label = QLabel(self)
@@ -218,16 +220,15 @@ class BHOUTGate(QMainWindow):
         self.bell_player.setAudioOutput(self.audio_output)
         self.bell_player.mediaStatusChanged.connect(self.handle_bell_status)
         
-        # Load and pause video initially
+        # Load and play video initially for debug
         video_path = self.config['media']['video_path']
         if not os.path.isabs(video_path):
             video_path = os.path.abspath(video_path)
         if os.path.exists(video_path):
             print(f"Loading video from: {video_path}")
             self.media_player.setSource(QUrl.fromLocalFile(video_path))
-            self.media_player.pause()
-            self.media_player.setPosition(0)
-            print("Video loaded and paused")
+            self.media_player.play()
+            print("Video loaded and playing (debug)")
         else:
             print("No video file configured or file not found")
     
