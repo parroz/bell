@@ -24,6 +24,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxcb-render-util0 \
     libxcb-xinerama0 \
     libxcb-xfixes0 \
+    libxcb-shape0 \
+    libxcb-shm0 \
+    libxcb-randr0 \
+    libxcb-xkb1 \
+    libx11-xcb1 \
+    libxcb-util1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxi6 \
+    libxrandr2 \
+    libxss1 \
+    libxtst6 \
+    libxv1 \
+    libxinerama1 \
+    libxkbcommon-x11-0 \
     xserver-xorg \
     xinit \
     x11-xserver-utils \
