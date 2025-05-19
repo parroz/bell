@@ -214,15 +214,17 @@ class BHOUTGate(QMainWindow):
         
         # Create status label as a child of video widget
         self.status_label = QLabel(self.video_widget)
-        self.status_label.setGeometry(0, 0, self.screen_width, 100)
+        # Position at bottom with some padding
+        self.status_label.setGeometry(0, self.screen_height - 120, self.screen_width, 100)
         self.status_label.setAlignment(Qt.AlignCenter)
         self.status_label.setStyleSheet("""
             QLabel {
                 background-color: rgba(0, 0, 0, 0.7);
-                color: red;
-                font-size: 36px;
+                color: white;
+                font-size: 32px;
                 font-weight: bold;
                 padding: 10px;
+                border-radius: 5px;
             }
         """)
         self.status_label.setAttribute(Qt.WA_TransparentForMouseEvents)
