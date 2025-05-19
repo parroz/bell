@@ -235,7 +235,7 @@ class BHOUTGate(QMainWindow):
         self.denial_text = QGraphicsTextItem()
         self.denial_text.setDefaultTextColor(QColor("white"))
         font = QFont()
-        font.setPointSize(36)
+        font.setPointSize(22)
         font.setBold(True)
         self.denial_text.setFont(font)
         self.denial_text.setZValue(2)  # Above background
