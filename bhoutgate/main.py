@@ -13,7 +13,7 @@ import ssl
 from PySide6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget, QLineEdit, QSizePolicy, QGraphicsView, QGraphicsScene, QGraphicsTextItem, QGraphicsRectItem
 from PySide6.QtCore import Qt, QTimer, QUrl, Signal, QObject, QRectF
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
-from PySide6.QtMultimediaWidgets import QVideoWidget
+from PySide6.QtMultimediaWidgets import QGraphicsVideoItem
 from PySide6.QtGui import QPixmap, QColor, QBrush, QPen, QFont, QPainter
 import paho.mqtt.client as mqtt
 
@@ -148,7 +148,7 @@ class BHOUTGate(QMainWindow):
         # Initialize variables
         self.timeout_timer = None
         self.logo_label = None
-        self.video_widget = None
+        self.video_item = None
         self.status_label = None
         
         # Load configuration
@@ -205,31 +205,31 @@ class BHOUTGate(QMainWindow):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
         
-        # Create a container widget for video and overlay
-        container = QWidget()
-        container.setFixedSize(self.screen_width, self.screen_height)
-        main_layout.addWidget(container)
+        # Create graphics view for video and overlays
+        self.graphics_view = QGraphicsView()
+        self.graphics_view.setFixedSize(self.screen_width, self.screen_height)
+        self.graphics_view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.graphics_view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.graphics_view.setStyleSheet("background-color: black;")
+        main_layout.addWidget(self.graphics_view)
         
-        # Create video widget
-        self.video_widget = QVideoWidget(container)
-        self.video_widget.setGeometry(0, 0, self.screen_width, self.screen_height)
-        self.video_widget.setStyleSheet("background-color: black;")
-        self.video_widget.setAspectRatioMode(Qt.IgnoreAspectRatio)
+        # Create scene
+        self.scene = QGraphicsScene()
+        self.scene.setSceneRect(0, 0, self.screen_width, self.screen_height)
+        self.graphics_view.setScene(self.scene)
         
-        # Create graphics view for overlay
-        self.overlay_view = QGraphicsView(container)
-        self.overlay_view.setGeometry(0, 0, self.screen_width, self.screen_height)
-        self.overlay_view.setStyleSheet("background: transparent;")
-        self.overlay_view.setAttribute(Qt.WA_TransparentForMouseEvents)
-        self.overlay_view.setAttribute(Qt.WA_TranslucentBackground)
-        self.overlay_view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.overlay_view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.overlay_view.setRenderHint(QPainter.Antialiasing)
+        # Create video item
+        self.video_item = QGraphicsVideoItem()
+        self.video_item.setSize(self.scene.sceneRect().size())
+        self.video_item.setZValue(0)  # Video at the bottom
+        self.scene.addItem(self.video_item)
         
-        # Create scene for overlay
-        self.overlay_scene = QGraphicsScene(self.overlay_view)
-        self.overlay_scene.setSceneRect(0, 0, self.screen_width, self.screen_height)
-        self.overlay_view.setScene(self.overlay_scene)
+        # Create background rectangle for text
+        self.background_rect = QGraphicsRectItem(0, self.screen_height - 120, self.screen_width, 100)
+        self.background_rect.setBrush(QBrush(QColor(0, 0, 0, 200)))
+        self.background_rect.setZValue(1)  # Above video
+        self.background_rect.hide()
+        self.scene.addItem(self.background_rect)
         
         # Create text item for denial message
         self.denial_text = QGraphicsTextItem()
@@ -238,26 +238,16 @@ class BHOUTGate(QMainWindow):
         font.setPointSize(36)
         font.setBold(True)
         self.denial_text.setFont(font)
-        self.denial_text.setZValue(1000)  # Ensure it's on top
-        
-        # Create background rectangle
-        self.background_rect = QGraphicsRectItem(0, self.screen_height - 120, self.screen_width, 100)
-        self.background_rect.setBrush(QBrush(QColor(0, 0, 0, 200)))
-        self.background_rect.setZValue(999)  # Just below the text
-        
-        # Add items to scene
-        self.overlay_scene.addItem(self.background_rect)
-        self.overlay_scene.addItem(self.denial_text)
-        
-        # Hide overlay initially
-        self.overlay_view.hide()
+        self.denial_text.setZValue(2)  # Above background
+        self.denial_text.hide()
+        self.scene.addItem(self.denial_text)
         
         print("UI setup complete")
     
     def setup_media(self):
         # Setup video player
         self.media_player = QMediaPlayer()
-        self.media_player.setVideoOutput(self.video_widget)
+        self.media_player.setVideoOutput(self.video_item)
         self.media_player.mediaStatusChanged.connect(self.handle_media_status)
         self.media_player.positionChanged.connect(self.handle_position_changed)
         self.media_player.durationChanged.connect(self.handle_duration_changed)
@@ -289,17 +279,18 @@ class BHOUTGate(QMainWindow):
         self.media_player.pause()
         self.media_player.setPosition(0)
         
-        self.overlay_view.hide()
+        self.denial_text.hide()
+        self.background_rect.hide()
         
         print("Returned to idle mode")
     
     def resizeEvent(self, event):
         print("Window size:", self.size())
-        print("Video widget size:", self.video_widget.size())
+        print("Video item size:", self.video_item.size())
         super().resizeEvent(event)
     
     def mousePressEvent(self, event):
-        if self.video_widget.isVisible() and not self.overlay_view.isVisible():
+        if self.video_item.isVisible() and not self.background_rect.isVisible():
             self.play_animation()
     
     def play_animation(self):
@@ -404,17 +395,17 @@ class BHOUTGate(QMainWindow):
         self.denial_text.setPos(x, y)
         
         # Show overlay
-        self.overlay_view.raise_()
-        self.overlay_view.show()
+        self.background_rect.show()
+        self.denial_text.show()
         
         # Force updates
-        self.overlay_view.viewport().update()
+        self.scene.update()
         
         # Add debug prints
-        print(f"Overlay view geometry: {self.overlay_view.geometry()}")
-        print(f"Overlay view is visible: {self.overlay_view.isVisible()}")
         print(f"Denial text: {text}")
         print(f"Text position: ({x}, {y})")
+        print(f"Text is visible: {self.denial_text.isVisible()}")
+        print(f"Background is visible: {self.background_rect.isVisible()}")
         
         self.timeout_timer = QTimer()
         self.timeout_timer.setSingleShot(True)
