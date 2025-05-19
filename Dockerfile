@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpulse0 \
     libfontconfig1 \
     libgl1 \
+    libdouble-conversion3 \
     xserver-xorg \
     xinit \
     x11-xserver-utils \
@@ -71,6 +72,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Tested working pipeline for 800x480 HDMI:
 # gst-launch-1.0 filesrc location=/usr/src/app/config/static/video.mp4 ! decodebin ! videoconvert ! videoscale ! video/x-raw,width=800,height=480 ! glimagesink
+
+# Xorg DRM config for Raspberry Pi HDMI output
+RUN mkdir -p /etc/X11/xorg.conf.d && \
+    echo 'Section "Device"\n  Identifier "HDMI"\n  Driver "modesetting"\n  Option "kmsdev" "/dev/dri/card0"\nEndSection' > /etc/X11/xorg.conf.d/99-pi-drm.conf
+
+# NOTE: The following overlays must be set in /boot/config.txt on the host OS, not in Docker.
+# Documented here for reference:
+#   dtparam=i2c_arm=on
+#   dtoverlay=waveshare-4dpic-3b
+#   dtoverlay=waveshare-4dpic-4b
+#   dtoverlay=waveshare-4dpic-5b
 
 # Start PulseAudio, Xorg (removing /tmp/.X0-lock if present), and then the app
 CMD ["sh", "-c", "rm -f /tmp/.X0-lock; pgrep Xorg || (Xorg :0 & sleep 2); DISPLAY=:0 python3 main.py"]
