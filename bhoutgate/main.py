@@ -14,7 +14,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QW
 from PySide6.QtCore import Qt, QTimer, QUrl, Signal, QObject, QRectF
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 from PySide6.QtMultimediaWidgets import QVideoWidget
-from PySide6.QtGui import QPixmap, QColor, QBrush, QPen, QFont
+from PySide6.QtGui import QPixmap, QColor, QBrush, QPen, QFont, QPainter
 import paho.mqtt.client as mqtt
 
 os.environ["GST_VIDEOSINK"] = "glimagesink"
@@ -212,31 +212,41 @@ class BHOUTGate(QMainWindow):
         self.video_widget.setAspectRatioMode(Qt.IgnoreAspectRatio)
         main_layout.addWidget(self.video_widget)
         
-        # Create overlay widget as a child of video widget
-        self.overlay_widget = QWidget(self.video_widget)
-        self.overlay_widget.setGeometry(0, 0, self.screen_width, self.screen_height)
-        self.overlay_widget.setStyleSheet("background: transparent;")
-        self.overlay_widget.setAttribute(Qt.WA_TransparentForMouseEvents)
-        self.overlay_widget.setAttribute(Qt.WA_TranslucentBackground)
-        self.overlay_widget.raise_()  # Ensure overlay is on top
+        # Create graphics view for overlay
+        self.overlay_view = QGraphicsView(self.video_widget)
+        self.overlay_view.setGeometry(0, 0, self.screen_width, self.screen_height)
+        self.overlay_view.setStyleSheet("background: transparent;")
+        self.overlay_view.setAttribute(Qt.WA_TransparentForMouseEvents)
+        self.overlay_view.setAttribute(Qt.WA_TranslucentBackground)
+        self.overlay_view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.overlay_view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.overlay_view.setRenderHint(QPainter.Antialiasing)
         
-        # Create status label in overlay widget
-        self.status_label = QLabel(self.overlay_widget)
-        self.status_label.setGeometry(0, self.screen_height - 120, self.screen_width, 100)
-        self.status_label.setAlignment(Qt.AlignCenter)
-        self.status_label.setStyleSheet("""
-            QLabel {
-                background-color: rgba(0, 0, 0, 0.8);
-                color: white;
-                font-size: 36px;
-                font-weight: bold;
-                padding: 10px;
-                border-radius: 5px;
-            }
-        """)
-        self.status_label.setAttribute(Qt.WA_TransparentForMouseEvents)
-        self.status_label.setAttribute(Qt.WA_TranslucentBackground)
-        self.status_label.hide()
+        # Create scene for overlay
+        self.overlay_scene = QGraphicsScene(self.overlay_view)
+        self.overlay_scene.setSceneRect(0, 0, self.screen_width, self.screen_height)
+        self.overlay_view.setScene(self.overlay_scene)
+        
+        # Create text item for denial message
+        self.denial_text = QGraphicsTextItem()
+        self.denial_text.setDefaultTextColor(QColor("white"))
+        font = QFont()
+        font.setPointSize(36)
+        font.setBold(True)
+        self.denial_text.setFont(font)
+        self.denial_text.setZValue(1000)  # Ensure it's on top
+        
+        # Create background rectangle
+        self.background_rect = QGraphicsRectItem(0, self.screen_height - 120, self.screen_width, 100)
+        self.background_rect.setBrush(QBrush(QColor(0, 0, 0, 200)))
+        self.background_rect.setZValue(999)  # Just below the text
+        
+        # Add items to scene
+        self.overlay_scene.addItem(self.background_rect)
+        self.overlay_scene.addItem(self.denial_text)
+        
+        # Hide overlay initially
+        self.overlay_view.hide()
         
         print("UI setup complete")
     
@@ -275,7 +285,7 @@ class BHOUTGate(QMainWindow):
         self.media_player.pause()
         self.media_player.setPosition(0)
         
-        self.status_label.hide()
+        self.overlay_view.hide()
         
         print("Returned to idle mode")
     
@@ -285,7 +295,7 @@ class BHOUTGate(QMainWindow):
         super().resizeEvent(event)
     
     def mousePressEvent(self, event):
-        if self.video_widget.isVisible() and not self.status_label.isVisible():
+        if self.video_widget.isVisible() and not self.overlay_view.isVisible():
             self.play_animation()
     
     def play_animation(self):
@@ -375,24 +385,32 @@ class BHOUTGate(QMainWindow):
         print(f"Access denied: {reason}")
         
         if reason:
-            self.status_label.setText(f"Access Denied: {reason}")
+            text = f"Access Denied: {reason}"
         else:
-            self.status_label.setText("Access Denied")
+            text = "Access Denied"
         
-        # Show label and ensure it's on top
-        self.overlay_widget.raise_()
-        self.status_label.raise_()
-        self.status_label.show()
+        # Update text
+        self.denial_text.setPlainText(text)
+        
+        # Center the text
+        text_width = self.denial_text.boundingRect().width()
+        text_height = self.denial_text.boundingRect().height()
+        x = (self.screen_width - text_width) / 2
+        y = self.screen_height - 120 + (100 - text_height) / 2
+        self.denial_text.setPos(x, y)
+        
+        # Show overlay
+        self.overlay_view.raise_()
+        self.overlay_view.show()
         
         # Force updates
-        self.status_label.repaint()
-        self.overlay_widget.repaint()
+        self.overlay_view.viewport().update()
         
         # Add debug prints
-        print(f"Status label geometry: {self.status_label.geometry()}")
-        print(f"Status label is visible: {self.status_label.isVisible()}")
-        print(f"Status label text: {self.status_label.text()}")
-        print(f"Overlay widget is visible: {self.overlay_widget.isVisible()}")
+        print(f"Overlay view geometry: {self.overlay_view.geometry()}")
+        print(f"Overlay view is visible: {self.overlay_view.isVisible()}")
+        print(f"Denial text: {text}")
+        print(f"Text position: ({x}, {y})")
         
         self.timeout_timer = QTimer()
         self.timeout_timer.setSingleShot(True)
