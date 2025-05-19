@@ -18,6 +18,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
     libdouble-conversion3 \
     libxcb-cursor0 \
+    libxcb-icccm4 \
+    libxcb-image0 \
+    libxcb-keysyms1 \
+    libxcb-render-util0 \
+    libxcb-xinerama0 \
+    libxcb-xfixes0 \
     xserver-xorg \
     xinit \
     x11-xserver-utils \
